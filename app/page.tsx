@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
+import Image from "next/image";
 import ConsultingResearchForm from "./components/ConsultingResearchForm";
 import ResearchResults from "./components/ResearchResults";
 import Sidebar from "./components/Sidebar";
@@ -263,14 +264,19 @@ export default function Home() {
             <div className="flex flex-col items-center justify-center min-h-screen px-4 py-12">
               {/* Header */}
               <div className="text-center mb-8 max-w-3xl">
-                <div className="flex items-center justify-center gap-3 mb-4">
-                  <div className="p-3 bg-primary/10 rounded-xl">
-                    <Briefcase className="w-10 h-10 text-primary" />
-                  </div>
+                <div className="flex flex-col-reverse md:flex-row items-center md:items-end justify-center gap-2 mb-4">
+                  <h1 className="text-4xl md:text-5xl font-bold md:mb-4">
+                    <span className="text-foreground">Consult Ralph</span>
+                  </h1>
+                  <Image
+                    src="/consultralph.png"
+                    alt="Consult Ralph"
+                    width={160}
+                    height={160}
+                    className="w-24 h-24 md:w-36 md:h-36 object-contain"
+                    priority
+                  />
                 </div>
-                <h1 className="text-4xl md:text-5xl font-bold mb-4">
-                  <span className="text-foreground">Consult Ralph</span>
-                </h1>
                 <p className="text-lg text-text-muted max-w-2xl mx-auto">
                   AI-powered deep research for consultants. Generate
                   comprehensive due diligence reports, market analyses,
