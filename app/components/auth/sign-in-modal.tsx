@@ -75,13 +75,14 @@ export function SignInModal({ open, onOpenChange }: SignInModalProps) {
         <DialogTitle className="text-center text-xl">Sign in</DialogTitle>
       </DialogHeader>
       <DialogContent className="space-y-6">
-        <p className="text-center text-sm text-muted-foreground">
-          Sign in to access all features.
-        </p>
-
-        <p className="text-center text-sm text-muted-foreground">
-          Valyu powers this app. It provides AI-powered deep research capabilities. Sign in to enjoy all the goodies and I dare you to enjoy it.
-        </p>
+        <div className="space-y-3">
+          <p className="text-center text-base font-medium text-foreground">
+            Free Deep Research powered by Valyu
+          </p>
+          <p className="text-center text-sm text-muted-foreground">
+            Valyu is the Search API for AI knowledge work. Get free access to comprehensive research reports, market analysis, and strategic insights.
+          </p>
+        </div>
 
         {/* Error Message */}
         {error && (
@@ -103,14 +104,13 @@ export function SignInModal({ open, onOpenChange }: SignInModalProps) {
             </>
           ) : (
             <>
-              <span className="mr-2">Sign in with</span>
-              <ValyuLogoWithText />
+              Sign in for free to start deepresearch
             </>
           )}
         </Button>
 
         <p className="text-center text-sm text-muted-foreground">
-          Don&apos;t have an account? You can create one during sign-in.
+          Don&apos;t have an account? Create one free during sign-in.
         </p>
       </DialogContent>
     </Dialog>
