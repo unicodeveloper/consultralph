@@ -279,6 +279,7 @@ export default function Home() {
             <video
               src="/ralph.mp4"
               autoPlay
+              muted
               playsInline
               className="max-w-full max-h-full object-contain"
               onEnded={handleIntroEnd}
