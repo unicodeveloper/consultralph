@@ -8,6 +8,7 @@ import Sidebar from "./components/Sidebar";
 import GitHubCorner from "./components/GitHubCorner";
 import { SignInPanel } from "./components/auth";
 import { Briefcase, X, Menu } from "lucide-react";
+import { DottedGlowBackground } from "@/components/ui/dotted-glow-background";
 import {
   saveToHistory,
   updateHistoryStatus,
@@ -308,7 +309,23 @@ export default function Home() {
   const showResults = isResearching || researchResult;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background relative">
+      {/* Dotted Glow Background */}
+      <DottedGlowBackground
+        className="pointer-events-none"
+        opacity={0.3}
+        gap={14}
+        radius={1.8}
+        colorLightVar="--color-neutral-400"
+        glowColorLightVar="--color-primary"
+        colorDarkVar="--color-neutral-600"
+        glowColorDarkVar="--color-primary"
+        backgroundOpacity={0}
+        speedMin={0.2}
+        speedMax={0.8}
+        speedScale={0.8}
+      />
+
       {/* First-time intro video */}
       {showIntro && (
         <div className="fixed inset-0 z-[100] bg-black flex items-center justify-center">
