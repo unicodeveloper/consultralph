@@ -49,6 +49,7 @@ export default function Home() {
   const [currentTaskId, setCurrentTaskId] = useState<string | null>(null);
   const [currentResearchTitle, setCurrentResearchTitle] = useState<string>("");
   const [showDiscordBanner, setShowDiscordBanner] = useState(true);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
 
   const cancelledRef = useRef(false);
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -222,25 +223,25 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-background">
       <GitHubCorner />
-      <SignInPanel />
+      <SignInPanel sidebarCollapsed={isSidebarCollapsed} />
 
-      {/* Discord Banner */}
+      {/* Discord Toast */}
       {showDiscordBanner && (
-        <div className="bg-primary text-white py-2 px-4 text-center text-sm relative">
+        <div className="fixed top-4 left-4 md:left-20 z-50 bg-card border border-border rounded-lg shadow-lg p-3 flex items-center gap-3 max-w-xs animate-in slide-in-from-left">
           <a
             href="https://discord.gg/8TCbHsSe"
             target="_blank"
             rel="noopener noreferrer"
-            className="hover:underline"
+            className="text-sm text-foreground hover:text-primary transition-colors"
           >
-            Join our Discord community for updates and support
+            🎮 Join our Discord community
           </a>
           <button
             onClick={() => setShowDiscordBanner(false)}
-            className="absolute right-4 top-1/2 -translate-y-1/2 hover:opacity-70"
-            aria-label="Dismiss banner"
+            className="text-muted-foreground hover:text-foreground transition-colors flex-shrink-0"
+            aria-label="Dismiss"
           >
-            <X size={16} />
+            <X size={14} />
           </button>
         </div>
       )}
@@ -251,6 +252,8 @@ export default function Home() {
           onSelectHistory={handleSelectHistory}
           onNewResearch={handleNewResearch}
           currentResearchId={currentTaskId}
+          isCollapsed={isSidebarCollapsed}
+          onCollapsedChange={setIsSidebarCollapsed}
         />
 
         {/* Main Content */}
@@ -266,9 +269,7 @@ export default function Home() {
                   </div>
                 </div>
                 <h1 className="text-4xl md:text-5xl font-bold mb-4">
-                  <span className="gradient-text">Consulting Research</span>
-                  <br />
-                  <span className="text-foreground">Intelligence</span>
+                  <span className="text-foreground">Consult Ralph</span>
                 </h1>
                 <p className="text-lg text-text-muted max-w-2xl mx-auto">
                   AI-powered deep research for consultants. Generate

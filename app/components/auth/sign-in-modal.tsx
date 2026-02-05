@@ -75,11 +75,11 @@ export function SignInModal({ open, onOpenChange }: SignInModalProps) {
         <DialogTitle className="text-center text-xl">Sign in</DialogTitle>
       </DialogHeader>
       <DialogContent className="space-y-6">
-        <p className="text-center text-sm text-text-muted">
+        <p className="text-center text-sm text-muted-foreground">
           Sign in to access all features.
         </p>
 
-        <p className="text-center text-sm text-text-muted">
+        <p className="text-center text-sm text-muted-foreground">
           Valyu powers this app. It provides AI-powered deep research capabilities. Sign in to enjoy all the goodies and I dare you to enjoy it.
         </p>
 
@@ -109,7 +109,7 @@ export function SignInModal({ open, onOpenChange }: SignInModalProps) {
           )}
         </Button>
 
-        <p className="text-center text-sm text-text-muted">
+        <p className="text-center text-sm text-muted-foreground">
           Don&apos;t have an account? You can create one during sign-in.
         </p>
       </DialogContent>

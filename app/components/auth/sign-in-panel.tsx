@@ -9,7 +9,11 @@ import { SignInModal } from "./sign-in-modal";
 
 const APP_MODE = process.env.NEXT_PUBLIC_APP_MODE || "self-hosted";
 
-export function SignInPanel() {
+interface SignInPanelProps {
+  sidebarCollapsed?: boolean;
+}
+
+export function SignInPanel({ sidebarCollapsed = true }: SignInPanelProps) {
   const { user, isAuthenticated, isLoading, signOut, showSignInModal, openSignInModal, closeSignInModal } = useAuthStore();
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -40,25 +44,30 @@ export function SignInPanel() {
     return null;
   }
 
+  // Only show panel when user is NOT authenticated AND sidebar is collapsed
+  if (isAuthenticated || !sidebarCollapsed) {
+    return null;
+  }
+
   return (
     <>
       <div
         className="fixed left-4 top-1/2 -translate-y-1/2 z-40"
         ref={dropdownRef}
       >
-        <div className="flex flex-col gap-1 rounded-2xl border border-border bg-surface p-2 shadow-lg">
+        <div className="flex flex-col gap-1 rounded-2xl border border-border bg-card p-2 shadow-lg">
           {/* User Avatar or Lock Icon */}
           <button
             onClick={handleAuthButtonClick}
             disabled={isLoading}
             className={cn(
               "flex h-14 w-14 items-center justify-center rounded-xl transition-colors",
-              isAuthenticated ? "hover:bg-surface-hover" : "bg-surface-hover/50 hover:bg-surface-hover",
+              "hover:bg-accent",
               isLoading && "opacity-50 cursor-not-allowed"
             )}
           >
             {isLoading ? (
-              <Loader2 className="h-5 w-5 animate-spin text-text-muted" />
+              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
             ) : isAuthenticated && user ? (
               user.picture ? (
                 <Image
@@ -74,7 +83,7 @@ export function SignInPanel() {
                 </div>
               )
             ) : (
-              <Lock className="h-5 w-5 text-text-muted" />
+              <Lock className="h-5 w-5 text-muted-foreground" />
             )}
           </button>
 
@@ -87,7 +96,7 @@ export function SignInPanel() {
 
         {/* User Dropdown */}
         {showDropdown && isAuthenticated && user && (
-          <div className="absolute left-full top-0 ml-3 w-64 rounded-xl border border-border bg-surface p-4 shadow-xl animate-in fade-in slide-in-from-left-2 duration-200">
+          <div className="absolute left-full top-0 ml-3 w-64 rounded-xl border border-border bg-card p-4 shadow-xl animate-in fade-in slide-in-from-left-2 duration-200">
             <div className="flex items-center gap-3">
               {user.picture ? (
                 <Image
@@ -106,7 +115,7 @@ export function SignInPanel() {
                 <p className="font-medium text-foreground truncate">
                   {user.name || "User"}
                 </p>
-                <p className="text-sm text-text-muted truncate">
+                <p className="text-sm text-muted-foreground truncate">
                   {user.email}
                 </p>
               </div>

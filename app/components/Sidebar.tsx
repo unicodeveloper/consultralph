@@ -38,19 +38,30 @@ interface SidebarProps {
   onSelectHistory?: (item: ResearchHistoryItem) => void;
   onNewResearch?: () => void;
   currentResearchId?: string | null;
+  isCollapsed?: boolean;
+  onCollapsedChange?: (collapsed: boolean) => void;
 }
 
 const bottomItems = [
-  { icon: BookOpen, label: "Documentation" },
-  { icon: HelpCircle, label: "Help & Support" },
+  { icon: BookOpen, label: "Documentation", href: "https://docs.valyu.ai/guides/deepresearch-quickstart" },
+  { icon: HelpCircle, label: "Help & Support", href: "https://discord.gg/8TCbHsSe" },
 ];
 
 export default function Sidebar({
   onSelectHistory,
   onNewResearch,
   currentResearchId,
+  isCollapsed: controlledCollapsed,
+  onCollapsedChange,
 }: SidebarProps) {
-  const [isCollapsed, setIsCollapsed] = useState(true);
+  const [internalCollapsed, setInternalCollapsed] = useState(true);
+
+  // Use controlled state if provided, otherwise use internal state
+  const isCollapsed = controlledCollapsed ?? internalCollapsed;
+  const setIsCollapsed = (value: boolean) => {
+    setInternalCollapsed(value);
+    onCollapsedChange?.(value);
+  };
   const [history, setHistory] = useState<ResearchHistoryItem[]>([]);
 
   const { isAuthenticated, openSignInModal } = useAuthStore();
@@ -146,16 +157,12 @@ export default function Sidebar({
 
   return (
     <aside
-      className={`hidden md:flex flex-col border-r transition-all duration-300 h-screen sticky top-0 z-20 ${
+      className={`hidden md:flex flex-col border-r border-border bg-surface transition-all duration-300 h-screen sticky top-0 z-20 ${
         isCollapsed ? "w-16" : "w-72"
       }`}
-      style={{
-        backgroundColor: "var(--sidebar)",
-        borderColor: "var(--sidebar-border)"
-      }}
     >
       {/* Header */}
-      <div className="p-4 border-b border-sidebar-border">
+      <div className="p-4 border-b border-border">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-primary/10 rounded-lg flex-shrink-0">
@@ -168,7 +175,7 @@ export default function Sidebar({
           {!isCollapsed && (
             <button
               onClick={() => setIsCollapsed(true)}
-              className="p-1.5 hover:bg-sidebar-accent rounded-lg transition-colors"
+              className="p-1.5 hover:bg-surface-hover rounded-lg transition-colors"
               aria-label="Collapse sidebar"
             >
               <ChevronLeft className="w-4 h-4 text-text-muted" />
@@ -178,8 +185,8 @@ export default function Sidebar({
       </div>
 
       {/* New Research Button */}
-      {!isCollapsed && (
-        <div className="p-2 border-b border-sidebar-border">
+      {!isCollapsed && isAuthenticated && (
+        <div className="p-2 border-b border-border">
           <button
             onClick={onNewResearch}
             className="w-full flex items-center justify-center gap-2 p-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
@@ -192,7 +199,7 @@ export default function Sidebar({
 
       {/* History Header */}
       {!isCollapsed && (
-        <div className="px-4 py-3 border-b border-sidebar-border">
+        <div className="px-4 py-3 border-b border-border">
           <div className="flex items-center gap-2 text-sm font-medium text-text-muted">
             <History className="w-4 h-4" />
             <span>Research History</span>
@@ -211,13 +218,15 @@ export default function Sidebar({
           // Collapsed view - show icons only
           <nav className="p-2">
             <div className="space-y-1">
-              <button
-                onClick={onNewResearch}
-                className="w-full flex items-center justify-center p-3 rounded-lg hover:bg-sidebar-accent transition-colors text-primary"
-                title="New Research"
-              >
-                <Plus className="w-5 h-5" />
-              </button>
+              {isAuthenticated && (
+                <button
+                  onClick={onNewResearch}
+                  className="w-full flex items-center justify-center p-3 rounded-lg hover:bg-surface-hover transition-colors text-primary"
+                  title="New Research"
+                >
+                  <Plus className="w-5 h-5" />
+                </button>
+              )}
               <button
                 onClick={() => {
                   if (canViewHistory) {
@@ -226,7 +235,7 @@ export default function Sidebar({
                     openSignInModal();
                   }
                 }}
-                className="w-full flex items-center justify-center p-3 rounded-lg hover:bg-sidebar-accent transition-colors text-text-muted"
+                className="w-full flex items-center justify-center p-3 rounded-lg hover:bg-surface-hover transition-colors text-text-muted"
                 title={canViewHistory ? "Research History" : "Sign in to view history"}
               >
                 {canViewHistory ? (
@@ -277,7 +286,7 @@ export default function Sidebar({
                           className={`w-full flex items-start gap-3 p-3 rounded-lg transition-colors text-left group cursor-pointer ${
                             isActive
                               ? "bg-primary/10 text-primary"
-                              : "hover:bg-sidebar-accent text-foreground"
+                              : "hover:bg-surface-hover text-foreground"
                           }`}
                           role="button"
                           tabIndex={0}
@@ -311,7 +320,7 @@ export default function Sidebar({
                     })}
                   </div>
                 </div>
-                <div className="p-2 border-t border-sidebar-border">
+                <div className="p-2 border-t border-border">
                   <button
                     onClick={handleClearHistory}
                     className="w-full flex items-center justify-center gap-2 p-2 text-sm text-text-muted hover:text-error hover:bg-error/5 rounded-lg transition-colors"
@@ -327,27 +336,30 @@ export default function Sidebar({
       </div>
 
       {/* Bottom Items */}
-      <div className="p-2 border-t border-sidebar-border">
+      <div className="p-2 border-t border-border">
         <div className="space-y-1">
           {bottomItems.map((item, index) => {
             const Icon = item.icon;
             return (
-              <button
+              <a
                 key={index}
-                className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-sidebar-accent transition-colors text-text-muted text-left"
+                href={item.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-surface-hover transition-colors text-text-muted text-left"
                 title={isCollapsed ? item.label : undefined}
               >
                 <Icon className="w-5 h-5 flex-shrink-0" />
                 {!isCollapsed && (
                   <span className="text-sm truncate">{item.label}</span>
                 )}
-              </button>
+              </a>
             );
           })}
           {/* Theme Toggle */}
           <button
             onClick={toggleTheme}
-            className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-sidebar-accent transition-colors text-text-muted text-left"
+            className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-surface-hover transition-colors text-text-muted text-left"
             title={isCollapsed ? (theme === "light" ? "Switch to Dark Mode" : "Switch to Light Mode") : undefined}
           >
             {theme === "light" ? (
@@ -367,7 +379,7 @@ export default function Sidebar({
       {/* Collapse Toggle */}
       <button
         onClick={() => setIsCollapsed(!isCollapsed)}
-        className="p-3 border-t border-sidebar-border hover:bg-sidebar-accent transition-colors flex items-center justify-center"
+        className="p-3 border-t border-border hover:bg-surface-hover transition-colors flex items-center justify-center"
         aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
       >
         {isCollapsed ? (

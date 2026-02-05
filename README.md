@@ -1,10 +1,10 @@
-# Consulting Research Intelligence
+# Consult Ralph
 
-AI-powered deep research platform for consultants. Generate comprehensive due diligence reports, market analyses, competitive landscapes, and strategic insights in minutes.
+![Consult Ralph](https://4ealzrotsszllxtz.public.blob.vercel-storage.com/consultralphk-wSPS0L5oGapyjTp8lfMSBPsiz3Tozo.png)
 
-Built for consultants at EY, Deloitte, PwC, KPMG, McKinsey, BCG, Bain, and investment banks.
+**Consult Ralph** is an autonomous deep research AI agent for consultants. It generates comprehensive due diligence reports, market analyses, competitive landscapes, and strategic insights in minutes. It can also run multiple research tasks simultaneously, like a swarm of agents completing in minutes what would normally take days or weeks or months.
 
-![Consulting Research Intelligence](https://img.shields.io/badge/AI-Powered-blue) ![Next.js](https://img.shields.io/badge/Next.js-15-black) ![TypeScript](https://img.shields.io/badge/TypeScript-5-blue)
+Built for consultants at EY, Deloitte, PwC, KPMG, McKinsey, BCG, Bain, and investment banks. 
 
 ## What It Does
 
@@ -27,7 +27,7 @@ This tool transforms hours of manual research into minutes of automated intellig
 
 ## Features
 
-- **Deep AI Research** - Leverages Valyu's Deep Research API to search across thousands of sources
+- **Deep AI Research** - Leverages [Valyu's Deep Research API](https://docs.valyu.ai/api-reference/endpoint/deepresearch-create) to search across thousands of sources
 - **Real-time Progress** - Visual indicators showing research stages and completion
 - **Professional Deliverables** - Consulting-quality PDF reports, spreadsheets, and summaries
 - **Multiple Research Types** - Company, market, competitive, industry, or custom research
@@ -56,8 +56,8 @@ This tool transforms hours of manual research into minutes of automated intellig
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/unicodeveloper/consulting-research.git
-   cd consulting-research
+   git clone https://github.com/unicodeveloper/consultralph.git
+   cd consultralph
    ```
 
 2. **Install dependencies**
@@ -90,14 +90,14 @@ This tool transforms hours of manual research into minutes of automated intellig
 2. Enter your research subject
 3. Click "Start Deep Research"
 4. Wait 5-10 minutes for comprehensive results
-5. Download your deliverables (PDF, CSV, DOCX)
+5. Download your deliverables (PDF, CSV, DOCX, PPTX)
 
 ### Advanced Options
 
 Expand "Advanced Options" to add:
 
 - **Research Focus** - Specify particular aspects to emphasize
-- **Client Context** - Tailor analysis for specific use cases (e.g., "PE firm evaluating acquisition")
+- **Client Context** - Tailor analysis for specific use cases (e.g., "PE firm evaluating acquisition" or "Fortune 500 company exploring market entry")
 - **Specific Questions** - List questions that must be directly answered
 
 ### Example Queries

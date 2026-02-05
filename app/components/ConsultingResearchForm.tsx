@@ -325,7 +325,7 @@ export default function ConsultingResearchForm({
       {/* Info Text */}
       <p className="text-xs text-text-muted text-center">
         Research typically takes 5-10 minutes. You&apos;ll receive a comprehensive
-        PDF report, data spreadsheet, and executive summary.
+        PDF report, data spreadsheet, and executive summary. You can also run multiple research all at once.
       </p>
     </form>
   );
