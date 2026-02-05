@@ -1,6 +1,6 @@
 # Consult Ralph
 
-![Ralph](https://4ealzrotsszllxtz.public.blob.vercel-storage.com/consultralphk-wSPS0L5oGapyjTp8lfMSBPsiz3Tozo.png)
+![Ralph](consultralph.png)
 
 **Consult Ralph** is an autonomous deep research AI agent for consultants. It generates comprehensive due diligence reports, market analyses, competitive landscapes, and strategic insights in minutes. It can also run multiple research tasks simultaneously, like a swarm of agents completing in minutes what would normally take days or weeks or months.
 
