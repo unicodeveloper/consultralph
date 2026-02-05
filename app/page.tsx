@@ -319,17 +319,17 @@ export default function Home() {
                   <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold md:mb-4">
                     <span className="text-foreground">Consult Ralph</span>
                   </h1>
-                  <div className="relative group cursor-pointer" onClick={() => setIsVideoPlaying(!isVideoPlaying)}>
+                  <div className="relative group cursor-pointer" onClick={() => !isVideoPlaying && setIsVideoPlaying(true)}>
                     {/* Ralph image/video */}
                     <div className="relative w-24 h-24 sm:w-28 sm:h-28 md:w-44 md:h-44">
                       {isVideoPlaying ? (
                         <video
                           src="/ralph.mp4"
                           autoPlay
-                          loop
                           muted
                           playsInline
                           className="w-full h-full object-contain"
+                          onEnded={() => setIsVideoPlaying(false)}
                         />
                       ) : (
                         <Image
