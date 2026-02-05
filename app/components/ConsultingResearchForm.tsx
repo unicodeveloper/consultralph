@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Search,
   Building2,
@@ -93,18 +93,46 @@ export default function ConsultingResearchForm({
   const selectedType = researchTypes.find((t) => t.id === researchType)!;
   const isValyuMode = APP_MODE !== "self-hosted";
 
+  // Restore form data from localStorage on mount
+  useEffect(() => {
+    const savedData = localStorage.getItem("consultralph_pending_research");
+    if (savedData && isAuthenticated) {
+      try {
+        const data = JSON.parse(savedData);
+        setResearchType(data.researchType);
+        setResearchSubject(data.researchSubject);
+        setResearchFocus(data.researchFocus);
+        setClientContext(data.clientContext);
+        setSpecificQuestions(data.specificQuestions);
+        // Clear the saved data after restoring
+        localStorage.removeItem("consultralph_pending_research");
+      } catch (e) {
+        console.error("Failed to restore form data:", e);
+      }
+    }
+  }, [isAuthenticated]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
-    // If in Valyu mode and not authenticated, open sign-in modal
-    if (isValyuMode && !isAuthenticated) {
-      openSignInModal();
+    if (!researchSubject.trim()) {
+      setError("Please enter a research subject");
       return;
     }
 
-    if (!researchSubject.trim()) {
-      setError("Please enter a research subject");
+    // If in Valyu mode and not authenticated, save form data and open sign-in modal
+    if (isValyuMode && !isAuthenticated) {
+      // Save form data to localStorage
+      const formData = {
+        researchType,
+        researchSubject: researchSubject.trim(),
+        researchFocus: researchFocus.trim(),
+        clientContext: clientContext.trim(),
+        specificQuestions: specificQuestions.trim(),
+      };
+      localStorage.setItem("consultralph_pending_research", JSON.stringify(formData));
+      openSignInModal();
       return;
     }
 
@@ -153,6 +181,10 @@ export default function ConsultingResearchForm({
       }
 
       const data = await response.json();
+
+      // Clear any pending research data after successful submission
+      localStorage.removeItem("consultralph_pending_research");
+
       onTaskCreated(data.deepresearch_id, researchSubject.trim(), researchType);
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
@@ -163,6 +195,8 @@ export default function ConsultingResearchForm({
 
   const handleQuickSelect = (example: string) => {
     setResearchSubject(example);
+    // Clear pending research when user starts selecting new examples
+    localStorage.removeItem("consultralph_pending_research");
   };
 
   return (
@@ -316,7 +350,7 @@ export default function ConsultingResearchForm({
       {/* Submit Button */}
       <button
         type="submit"
-        disabled={isSubmitting || isResearching || (isAuthenticated && !researchSubject.trim())}
+        disabled={isSubmitting || isResearching || !researchSubject.trim()}
         className="btn-primary w-full flex items-center justify-center gap-2 min-h-[48px] sm:min-h-[52px] text-base sm:text-lg"
       >
         {isSubmitting ? (
@@ -327,7 +361,7 @@ export default function ConsultingResearchForm({
         ) : (
           <>
             <Search className="w-5 h-5 sm:w-6 sm:h-6" />
-            <span>{isValyuMode && !isAuthenticated ? "Sign in to start deepresearch" : "Start Deep Research"}</span>
+            <span>Start Deep Research</span>
           </>
         )}
       </button>

@@ -6,9 +6,9 @@ import ConsultingResearchForm from "./components/ConsultingResearchForm";
 import ResearchResults from "./components/ResearchResults";
 import Sidebar from "./components/Sidebar";
 import GitHubCorner from "./components/GitHubCorner";
-import { SignInPanel } from "./components/auth";
-import { Briefcase, X, Menu } from "lucide-react";
+import { X, Menu } from "lucide-react";
 import { DottedGlowBackground } from "@/components/ui/dotted-glow-background";
+import Image from "next/image";
 import {
   saveToHistory,
   updateHistoryStatus,
@@ -362,7 +362,6 @@ export default function Home() {
       )}
 
       <GitHubCorner />
-      <SignInPanel sidebarCollapsed={isSidebarCollapsed} />
 
       {/* Mobile Menu Button */}
       <button
@@ -575,8 +574,14 @@ export default function Home() {
               {/* Compact Header */}
               <div className="flex items-center justify-between mb-4 sm:mb-6">
                 <div className="flex items-center gap-2 sm:gap-3">
-                  <div className="p-2 bg-primary/10 rounded-lg">
-                    <Briefcase className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
+                  <div className="relative w-10 h-10 sm:w-12 sm:h-12">
+                    <Image
+                      src="/consultralph.png"
+                      alt="Ralph"
+                      width={48}
+                      height={48}
+                      className="w-full h-full object-contain"
+                    />
                   </div>
                   <div>
                     <h1 className="text-lg sm:text-xl font-bold">
