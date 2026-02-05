@@ -17,7 +17,7 @@ export const metadata: Metadata = {
   metadataBase: new URL(
     process.env.NEXT_PUBLIC_APP_URL || "https://consulting-research.valyu.network"
   ),
-  title: "Consulting Research Intelligence | AI-Powered Deep Research",
+  title: "Consult Ralph | AI-Powered Deep Research for Consultants",
   description:
     "Generate comprehensive research reports for due diligence, market analysis, competitive landscapes, and strategic insights. Built for consultants at top firms.",
   keywords: [
@@ -34,23 +34,38 @@ export const metadata: Metadata = {
   creator: "Consulting Research Intelligence",
   publisher: "Consulting Research Intelligence",
   icons: {
-    icon: [{ url: "/icon.svg", type: "image/svg+xml" }],
-    apple: [{ url: "/apple-icon.svg", type: "image/svg+xml" }],
+    icon: [
+      { url: "/favicon-16x16.png", sizes: "16x16", type: "image/png" },
+      { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
+    ],
+    apple: [{ url: "/apple-icon.png", sizes: "180x180", type: "image/png" }],
+    other: [
+      { rel: "icon", url: "/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
   },
   openGraph: {
-    title: "Consulting Research Intelligence",
+    title: "Consult Ralph | AI-Powered Deep Research",
     description:
       "Generate comprehensive research reports in minutes. AI-powered deep research for due diligence, market analysis, and competitive intelligence. Built for consultants at top firms.",
     type: "website",
-    siteName: "Consulting Research Intelligence",
+    siteName: "Consult Ralph",
     locale: "en_US",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "Consult Ralph - AI-Powered Deep Research",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Consulting Research Intelligence",
+    title: "Consult Ralph | AI-Powered Deep Research",
     description:
       "Generate comprehensive research reports in minutes. AI-powered deep research for due diligence, market analysis, and competitive intelligence.",
     creator: "@valaboratory",
+    images: ["/og-image.png"],
   },
   robots: {
     index: true,
