@@ -287,14 +287,14 @@ export default function Home() {
               onEnded={handleIntroEnd}
             />
             {/* Subtitles */}
-            <div className="absolute bottom-20 left-1/2 transform -translate-x-1/2 text-center px-6 max-w-4xl">
+            <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 text-center px-6 max-w-4xl">
               <p className="text-white text-2xl md:text-4xl font-semibold mb-4 drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">
                 Hello everyone! Do you need any help?
               </p>
-              <p className="text-white text-2xl md:text-4xl font-semibold mb-4 drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">
+              <p className="text-white text-2xl md:text-4xl font-semibold mb-6 drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">
                 Just consult Ralph.....
               </p>
-              <p className="text-white/80 text-lg md:text-xl drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">
+              <p className="text-white/70 text-sm md:text-base italic drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">
                 Powered by Valyu DeepResearch API
               </p>
             </div>
