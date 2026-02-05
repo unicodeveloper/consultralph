@@ -309,23 +309,7 @@ export default function Home() {
   const showResults = isResearching || researchResult;
 
   return (
-    <div className="min-h-screen bg-background relative">
-      {/* Dotted Glow Background */}
-      <DottedGlowBackground
-        className="pointer-events-none"
-        opacity={0.3}
-        gap={14}
-        radius={1.8}
-        colorLightVar="--color-neutral-400"
-        glowColorLightVar="--color-primary"
-        colorDarkVar="--color-neutral-600"
-        glowColorDarkVar="--color-primary"
-        backgroundOpacity={0}
-        speedMin={0.2}
-        speedMax={0.8}
-        speedScale={0.8}
-      />
-
+    <div className="min-h-screen bg-background">
       {/* First-time intro video */}
       {showIntro && (
         <div className="fixed inset-0 z-[100] bg-black flex items-center justify-center">
@@ -425,7 +409,23 @@ export default function Home() {
         />
 
         {/* Main Content */}
-        <main className="flex-1 min-h-screen">
+        <main className="flex-1 min-h-screen relative">
+          {/* Dotted Glow Background */}
+          <DottedGlowBackground
+            className="pointer-events-none"
+            opacity={0.3}
+            gap={14}
+            radius={1.8}
+            colorLightVar="--color-neutral-400"
+            glowColorLightVar="--color-primary"
+            colorDarkVar="--color-neutral-600"
+            glowColorDarkVar="--color-primary"
+            backgroundOpacity={0}
+            speedMin={0.2}
+            speedMax={0.8}
+            speedScale={0.8}
+          />
+
           {!showResults ? (
             // Homepage layout
             <div className="flex flex-col items-center justify-center min-h-screen px-4 sm:px-6 py-12 sm:py-16">
