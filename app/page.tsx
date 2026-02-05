@@ -258,6 +258,29 @@ export default function Home() {
     setShowIntro(true);
   }, []);
 
+  // Try to enable audio after video starts playing
+  useEffect(() => {
+    if (showIntro && introVideoRef.current) {
+      const video = introVideoRef.current;
+
+      const tryUnmute = async () => {
+        try {
+          // Start playing muted
+          await video.play();
+          // Wait a tiny bit then try to unmute
+          setTimeout(() => {
+            video.muted = false;
+            setIntroStarted(true);
+          }, 100);
+        } catch (error) {
+          console.log('Autoplay with sound blocked, showing play button');
+        }
+      };
+
+      tryUnmute();
+    }
+  }, [showIntro]);
+
   const handleIntroStart = () => {
     setIntroStarted(true);
     if (introVideoRef.current) {
