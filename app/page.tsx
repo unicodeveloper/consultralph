@@ -365,10 +365,16 @@ export default function Home() {
       {/* Mobile Menu Button */}
       <button
         onClick={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
-        className="fixed top-4 left-4 z-30 md:hidden p-3 bg-surface border border-border rounded-lg shadow-lg hover:bg-surface-hover transition-all active:scale-95"
+        className="fixed top-4 left-4 z-30 md:hidden p-2 bg-surface border border-border rounded-lg shadow-lg hover:bg-surface-hover transition-all active:scale-95"
         aria-label="Toggle menu"
       >
-        <Menu className="w-5 h-5 text-foreground" />
+        <Image
+          src="/consultralph.png"
+          alt="Menu"
+          width={32}
+          height={32}
+          className="w-8 h-8 object-contain"
+        />
       </button>
 
       {/* Discord Toast */}
