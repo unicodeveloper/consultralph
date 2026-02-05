@@ -184,11 +184,20 @@ export default function Home() {
     clearPolling();
 
     try {
+      // Build headers with optional auth token
+      const headers: HeadersInit = {
+        "Content-Type": "application/json",
+      };
+
+      // Add authorization header if user is authenticated
+      const accessToken = getAccessToken();
+      if (accessToken) {
+        headers["Authorization"] = `Bearer ${accessToken}`;
+      }
+
       await fetch("/api/consulting-research/cancel", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers,
         body: JSON.stringify({ taskId: currentTaskId }),
       });
 

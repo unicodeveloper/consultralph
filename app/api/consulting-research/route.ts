@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Valyu } from "valyu-js";
+import { isSelfHostedMode } from "@/app/lib/app-mode";
 
-const APP_MODE = process.env.NEXT_PUBLIC_APP_MODE || "self-hosted";
 const VALYU_APP_URL = process.env.VALYU_APP_URL || "https://platform.valyu.ai";
 
 const getValyuApiKey = () => {
@@ -141,20 +141,26 @@ export async function POST(request: NextRequest) {
     // Build deliverables based on research type
     const deliverables = buildDeliverables(researchType, researchSubject);
 
-    let response;
+    // Check mode first
+    const selfHosted = isSelfHostedMode();
 
-    if (accessToken) {
-      // User is authenticated - use their credits via OAuth proxy
-      response = await createResearchWithOAuth(accessToken, query, deliverables);
-    } else if (APP_MODE === "self-hosted") {
-      // Self-hosted mode - use server API key
-      response = await createResearchWithApiKey(query, deliverables);
-    } else {
-      // Valyu mode without auth - require sign in
+    // Valyu mode requires authentication
+    if (!selfHosted && !accessToken) {
       return NextResponse.json(
-        { error: "Please sign in to start research" },
+        { error: "Please sign in to start research", requiresReauth: true },
         { status: 401 }
       );
+    }
+
+    let response;
+
+    // Route based on mode
+    if (!selfHosted && accessToken) {
+      // Valyu mode: use OAuth proxy (charges user's credits)
+      response = await createResearchWithOAuth(accessToken, query, deliverables);
+    } else {
+      // Self-hosted mode: use server API key
+      response = await createResearchWithApiKey(query, deliverables);
     }
 
     return NextResponse.json({

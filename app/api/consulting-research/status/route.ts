@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Valyu } from "valyu-js";
+import { isSelfHostedMode } from "@/app/lib/app-mode";
 
-const APP_MODE = process.env.NEXT_PUBLIC_APP_MODE || "self-hosted";
 const VALYU_APP_URL = process.env.VALYU_APP_URL || "https://platform.valyu.ai";
 
 interface StatusResponse {
@@ -65,24 +65,31 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // Check mode first
+    const selfHosted = isSelfHostedMode();
+
+    // Valyu mode requires authentication
+    if (!selfHosted && !accessToken) {
+      return NextResponse.json(
+        { error: "Authentication required", requiresReauth: true },
+        { status: 401 }
+      );
+    }
+
     let statusData: StatusResponse;
 
-    // Use OAuth proxy in valyu mode with token
-    if (APP_MODE === "valyu" && accessToken) {
+    // Route based on mode
+    if (!selfHosted && accessToken) {
+      // Valyu mode: use OAuth proxy
       statusData = await getStatusViaProxy(taskId, accessToken);
       if (statusData.error) {
         return NextResponse.json({ error: statusData.error }, { status: 500 });
       }
-    } else if (APP_MODE === "self-hosted" || !accessToken) {
-      // Self-hosted mode or no token: use API key directly
+    } else {
+      // Self-hosted mode: use API key directly
       const valyu = new Valyu(getValyuApiKey());
       const sdkResponse = await valyu.deepresearch.status(taskId);
       statusData = sdkResponse as unknown as StatusResponse;
-    } else {
-      return NextResponse.json(
-        { error: "Authentication required" },
-        { status: 401 }
-      );
     }
 
     return NextResponse.json({
