@@ -251,12 +251,9 @@ export default function Home() {
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, []);
 
-  // Check if first visit
+  // Always show intro for testing
   useEffect(() => {
-    const hasSeenIntro = localStorage.getItem("consultralph_intro_seen");
-    if (!hasSeenIntro) {
-      setShowIntro(true);
-    }
+    setShowIntro(true);
   }, []);
 
   const handleIntroEnd = () => {
