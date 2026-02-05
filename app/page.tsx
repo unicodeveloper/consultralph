@@ -8,7 +8,6 @@ import Sidebar from "./components/Sidebar";
 import GitHubCorner from "./components/GitHubCorner";
 import { X, Menu } from "lucide-react";
 import { DottedGlowBackground } from "@/components/ui/dotted-glow-background";
-import Image from "next/image";
 import {
   saveToHistory,
   updateHistoryStatus,
