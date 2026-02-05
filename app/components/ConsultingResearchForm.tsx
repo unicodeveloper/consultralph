@@ -13,6 +13,8 @@ import {
 } from "lucide-react";
 import { useAuthStore } from "@/app/stores/auth-store";
 
+const APP_MODE = process.env.NEXT_PUBLIC_APP_MODE || "self-hosted";
+
 interface ConsultingResearchFormProps {
   onTaskCreated: (taskId: string, title: string, researchType: string) => void;
   isResearching: boolean;
@@ -86,8 +88,10 @@ export default function ConsultingResearchForm({
 
   const getAccessToken = useAuthStore((state) => state.getAccessToken);
   const openSignInModal = useAuthStore((state) => state.openSignInModal);
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
 
   const selectedType = researchTypes.find((t) => t.id === researchType)!;
+  const isValyuMode = APP_MODE !== "self-hosted";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -317,7 +321,7 @@ export default function ConsultingResearchForm({
         ) : (
           <>
             <Search className="w-5 h-5 sm:w-6 sm:h-6" />
-            <span>Start Deep Research</span>
+            <span>{isValyuMode && !isAuthenticated ? "Sign in to start deepresearch" : "Start Deep Research"}</span>
           </>
         )}
       </button>
