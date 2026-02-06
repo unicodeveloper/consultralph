@@ -9,11 +9,7 @@ import GitHubCorner from "./components/GitHubCorner";
 import { SignInModal } from "./components/auth";
 import { X } from "lucide-react";
 import { DottedGlowBackground } from "@/components/ui/dotted-glow-background";
-import {
-  saveToHistory,
-  updateHistoryStatus,
-  ResearchHistoryItem,
-} from "./lib/researchHistory";
+import { ResearchHistoryItem, saveToHistory, updateHistoryStatus } from "./lib/researchHistory";
 import { useAuthStore } from "./stores/auth-store";
 
 interface ResearchResult {
@@ -40,6 +36,10 @@ interface ResearchResult {
     current_step: number;
     total_steps: number;
   };
+  messages?: Array<{
+    role: string;
+    content: string | Array<Record<string, unknown>>;
+  }>;
   error?: string;
 }
 
@@ -84,6 +84,7 @@ export default function Home() {
         const statusUrl = accessToken
           ? `/api/consulting-research/status?taskId=${taskId}&accessToken=${encodeURIComponent(accessToken)}`
           : `/api/consulting-research/status?taskId=${taskId}`;
+
         const response = await fetch(statusUrl);
 
         if (!response.ok) {
@@ -92,19 +93,7 @@ export default function Home() {
         }
 
         const data = await response.json();
-        console.log('[DEBUG] Status API response:', {
-          status: data.status,
-          hasDeliverables: !!data.deliverables,
-          hasOutput: !!data.output,
-          hasPdfUrl: !!data.pdf_url,
-          deliverableCount: data.deliverables?.length,
-        });
         setResearchResult(data);
-
-        // Update history status
-        if (data.status) {
-          updateHistoryStatus(taskId, data.status);
-        }
 
         if (
           data.status === "completed" ||
@@ -112,12 +101,11 @@ export default function Home() {
           data.status === "cancelled"
         ) {
           clearPolling();
-          if (data.status !== "completed") {
-            setIsResearching(false);
-          }
+          setIsResearching(false);
+          updateHistoryStatus(taskId, data.status);
         }
       } catch (error) {
-        console.error("Error polling status:", error);
+        console.error("Error polling research status:", error);
       }
     },
     [clearPolling, getAccessToken]
@@ -134,10 +122,10 @@ export default function Home() {
         task_id: taskId,
       });
 
-      // Save to history
+      // Save to localStorage so history works before platform proxy fix
       saveToHistory({
         id: taskId,
-        title: title,
+        title,
         researchType: researchType,
         status: "queued",
       });
@@ -216,9 +204,6 @@ export default function Home() {
         headers,
         body: JSON.stringify({ taskId: currentTaskId }),
       });
-
-      // Update history status
-      updateHistoryStatus(currentTaskId, "cancelled");
     } catch (error) {
       console.error("Error cancelling research:", error);
     }

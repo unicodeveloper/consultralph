@@ -13,6 +13,7 @@ interface StatusResponse {
   pdf_url?: string;
   deliverables?: Array<{ type?: string; title?: string; url?: string; status?: string }>;
   progress?: { current_step?: number; total_steps?: number };
+  messages?: Array<{ role?: string; content?: string | Array<Record<string, unknown>> }>;
   error?: string;
 }
 
@@ -101,6 +102,7 @@ export async function GET(request: NextRequest) {
       pdf_url: statusData.pdf_url,
       deliverables: statusData.deliverables,
       progress: statusData.progress,
+      messages: statusData.messages,
       error: statusData.error,
     });
   } catch (error) {

@@ -24,12 +24,7 @@ import {
   Lock,
   X,
 } from "lucide-react";
-import {
-  getResearchHistory,
-  removeFromHistory,
-  clearHistory,
-  ResearchHistoryItem,
-} from "@/app/lib/researchHistory";
+import { ResearchHistoryItem, getResearchHistory, removeFromHistory, clearHistory } from "@/app/lib/researchHistory";
 import { useAuthStore } from "@/app/stores/auth-store";
 import { useThemeStore } from "@/app/stores/theme-store";
 
@@ -107,36 +102,54 @@ export default function Sidebar({
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, []);
 
-  // Load history on mount and when localStorage changes
+  // Fetch history from deepresearch list API
   useEffect(() => {
-    const loadHistory = () => {
-      setHistory(getResearchHistory());
-    };
+    if (!canViewHistory) return;
 
-    loadHistory();
-
-    // Listen for storage changes (from other tabs or updates)
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === "consulting_research_history") {
-        loadHistory();
+    const fetchHistory = async () => {
+      try {
+        const { getAccessToken } = useAuthStore.getState();
+        const accessToken = getAccessToken();
+        const url = accessToken
+          ? `/api/consulting-research/list?accessToken=${encodeURIComponent(accessToken)}`
+          : `/api/consulting-research/list`;
+        const response = await fetch(url);
+        if (!response.ok) throw new Error("List API " + response.status);
+        const data = await response.json();
+        if (data.tasks && data.tasks.length > 0) {
+          const mapped: ResearchHistoryItem[] = data.tasks.map(
+            (task: { deepresearch_id: string; query: string; status: string; created_at: number }) => ({
+              id: task.deepresearch_id,
+              title: task.query,
+              researchType: "custom",
+              createdAt: task.created_at ? task.created_at * 1000 : Date.now(),
+              status: task.status as ResearchHistoryItem["status"],
+            })
+          );
+          setHistory(mapped);
+          return;
+        }
+      } catch {
+        // API unavailable - fall through to localStorage
+      }
+      // Fall back to localStorage if API fails or returns empty
+      const localHistory = getResearchHistory();
+      if (localHistory.length > 0) {
+        setHistory(localHistory);
       }
     };
 
-    window.addEventListener("storage", handleStorageChange);
+    fetchHistory();
 
-    // Also set up an interval to check for updates from the same tab
-    const interval = setInterval(loadHistory, 2000);
-
-    return () => {
-      window.removeEventListener("storage", handleStorageChange);
-      clearInterval(interval);
-    };
-  }, []);
+    // Refresh history periodically
+    const interval = setInterval(fetchHistory, 30000);
+    return () => clearInterval(interval);
+  }, [canViewHistory]);
 
   const handleRemoveItem = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     removeFromHistory(id);
-    setHistory(getResearchHistory());
+    setHistory((prev) => prev.filter((h) => h.id !== id));
   };
 
   const handleClearHistory = () => {

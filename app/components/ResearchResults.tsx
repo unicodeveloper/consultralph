@@ -1,59 +1,29 @@
 "use client";
 
-import { useState } from "react";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
+import React, { useState, useMemo } from "react";
+import dynamic from "next/dynamic";
+import { marked } from "marked";
 import {
   CheckCircle,
   XCircle,
-  Download,
   FileText,
   FileSpreadsheet,
   File,
+  Download,
   ExternalLink,
+  ChevronDown,
+  ChevronUp,
   Loader2,
   RefreshCw,
-  Clock,
-  Search,
-  Brain,
-  BarChart3,
-  FileCheck,
+  Globe,
+  BookOpen,
   Eye,
+  Presentation,
 } from "lucide-react";
-import FileViewer from "./FileViewer";
+import ResearchActivityFeed from "./ResearchActivityFeed";
 
-interface ResearchResult {
-  status: string;
-  task_id: string;
-  output?: string;
-  sources?: Array<{
-    title: string;
-    url: string;
-  }>;
-  usage?: {
-    search_units: number;
-    ai_units: number;
-    compute_units: number;
-    total_cost: number;
-  };
-  pdf_url?: string;
-  deliverables?: Array<{
-    type: string;
-    title: string;
-    url: string;
-  }>;
-  progress?: {
-    current_step: number;
-    total_steps: number;
-  };
-  error?: string;
-}
-
-interface ResearchResultsProps {
-  result: ResearchResult | null;
-  onCancel: () => void;
-  onReset: () => void;
-}
+// Lazy-load FileViewer to avoid bundling papaparse + xlsx eagerly
+const FileViewer = dynamic(() => import("./FileViewer"), { ssr: false });
 
 interface ViewerState {
   isOpen: boolean;
@@ -62,20 +32,59 @@ interface ViewerState {
   title: string;
 }
 
-const researchSteps = [
-  { icon: Search, label: "Searching business databases" },
-  { icon: Brain, label: "Analyzing data and trends" },
-  { icon: BarChart3, label: "Generating insights" },
-  { icon: FileCheck, label: "Compiling deliverables" },
-];
+interface ResearchResultsProps {
+  result: {
+    status: string;
+    task_id: string;
+    output?: string;
+    sources?: Array<{ title: string; url: string }>;
+    pdf_url?: string;
+    deliverables?: Array<{ type: string; title: string; url: string }>;
+    progress?: { current_step: number; total_steps: number };
+    messages?: Array<{ role: string; content: string | Array<Record<string, unknown>> }>;
+    error?: string;
+  } | null;
+  onCancel: () => void;
+  onReset: () => void;
+}
 
-export default function ResearchResults({
-  result,
-  onCancel,
-  onReset,
-}: ResearchResultsProps) {
+function getFileIcon(format: string) {
+  switch (format.toLowerCase()) {
+    case "pdf":
+      return <FileText className="w-5 h-5 text-red-500" />;
+    case "csv":
+    case "xlsx":
+      return <FileSpreadsheet className="w-5 h-5 text-green-500" />;
+    case "docx":
+      return <File className="w-5 h-5 text-blue-500" />;
+    case "pptx":
+      return <Presentation className="w-5 h-5 text-orange-500" />;
+    default:
+      return <File className="w-5 h-5 text-gray-500" />;
+  }
+}
+
+function getFileLabel(format: string) {
+  switch (format.toLowerCase()) {
+    case "pdf":
+      return "Full Research Report";
+    case "csv":
+      return "Data & Comparisons";
+    case "xlsx":
+      return "Data Spreadsheet";
+    case "docx":
+      return "Executive Summary";
+    case "pptx":
+      return "Presentation";
+    default:
+      return format.toUpperCase();
+  }
+}
+
+export default function ResearchResults({ result, onCancel, onReset }: ResearchResultsProps) {
+  const [showReport, setShowReport] = useState(true);
+  const [showSources, setShowSources] = useState(false);
   const [isDownloading, setIsDownloading] = useState<string | null>(null);
-  const [isCancelling, setIsCancelling] = useState(false);
   const [viewer, setViewer] = useState<ViewerState>({
     isOpen: false,
     url: "",
@@ -83,55 +92,23 @@ export default function ResearchResults({
     title: "",
   });
 
-  const getStatusMessage = (status: string) => {
-    switch (status) {
-      case "queued":
-        return "Research queued, starting soon...";
-      case "running":
-        return "Deep research in progress...";
-      case "completed":
-        return "Research completed successfully!";
-      case "failed":
-        return "Research encountered an error";
-      case "cancelled":
-        return "Research was cancelled";
-      default:
-        return "Processing...";
-    }
-  };
+  // Only compute HTML when report is expanded - avoids work on initial render
+  const reportHtml = useMemo(() => {
+    if (!showReport || !result?.output) return "";
+    return marked(result.output, { gfm: true, breaks: true }) as string;
+  }, [showReport, result?.output]);
 
-  const getFileIcon = (format: string) => {
-    switch (format.toLowerCase()) {
-      case "pdf":
-        return <FileText className="w-5 h-5 text-red-500" />;
-      case "csv":
-      case "xlsx":
-        return <FileSpreadsheet className="w-5 h-5 text-green-500" />;
-      case "docx":
-        return <File className="w-5 h-5 text-blue-500" />;
-      case "pptx":
-        return <File className="w-5 h-5 text-orange-500" />;
-      default:
-        return <File className="w-5 h-5 text-gray-500" />;
-    }
-  };
+  if (!result) return null;
 
-  const getFileLabel = (format: string) => {
-    switch (format.toLowerCase()) {
-      case "pdf":
-        return "Full Research Report";
-      case "csv":
-        return "Data & Comparisons";
-      case "xlsx":
-        return "Data Spreadsheet";
-      case "docx":
-        return "Executive Summary";
-      case "pptx":
-        return "Presentation";
-      default:
-        return format.toUpperCase();
-    }
-  };
+  const isComplete = result.status === "completed";
+  const isInProgress = result.status === "queued" || result.status === "running";
+  const isFailed = result.status === "failed" || result.status === "cancelled";
+
+  const progressPercent = result.progress
+    ? Math.round((result.progress.current_step / result.progress.total_steps) * 100)
+    : isComplete
+      ? 100
+      : 0;
 
   const handleDownload = async (url: string, filename: string) => {
     setIsDownloading(filename);
@@ -147,7 +124,6 @@ export default function ResearchResults({
       document.body.removeChild(a);
       window.URL.revokeObjectURL(downloadUrl);
     } catch {
-      // Fallback: open in new tab
       window.open(url, "_blank");
     } finally {
       setIsDownloading(null);
@@ -155,42 +131,15 @@ export default function ResearchResults({
   };
 
   const handleView = (url: string, fileType: string, title: string) => {
-    setViewer({
-      isOpen: true,
-      url,
-      fileType,
-      title,
-    });
+    setViewer({ isOpen: true, url, fileType, title });
   };
 
   const closeViewer = () => {
-    setViewer({
-      isOpen: false,
-      url: "",
-      fileType: "",
-      title: "",
-    });
+    setViewer({ isOpen: false, url: "", fileType: "", title: "" });
   };
-
-  const handleCancel = async () => {
-    setIsCancelling(true);
-    await onCancel();
-    setIsCancelling(false);
-  };
-
-  const isComplete = result?.status === "completed";
-  const isFailed = result?.status === "failed" || result?.status === "cancelled";
-  const isInProgress = result?.status === "queued" || result?.status === "running";
-
-  const progressPercent = result?.progress
-    ? Math.round((result.progress.current_step / result.progress.total_steps) * 100)
-    : 0;
-
-  // If completed but no data yet, treat as loading
-  const isLoadingData = isComplete && !result.deliverables && !result.pdf_url && !result.output;
 
   return (
-    <div className="space-y-4 sm:space-y-6">
+    <div className="space-y-4 min-w-0">
       {/* File Viewer Modal */}
       <FileViewer
         url={viewer.url}
@@ -200,165 +149,98 @@ export default function ResearchResults({
         onClose={closeViewer}
       />
 
-      {/* Status Header */}
-      {(isInProgress || isLoadingData) && (
-        <div className="card">
-          <div className="flex flex-col items-center text-center">
-            {/* Animated Loading Ring */}
-            <div className="relative w-20 h-20 sm:w-24 sm:h-24 mb-4">
-              <div className="absolute inset-0 border-4 border-primary/20 rounded-full" />
-              <div
-                className="absolute inset-0 border-4 border-primary rounded-full pulse-ring"
-                style={{
-                  clipPath: `polygon(0 0, 100% 0, 100% 100%, 0 100%)`,
-                }}
-              />
-              <div className="absolute inset-0 flex items-center justify-center">
-                <Clock className="w-8 h-8 sm:w-10 sm:h-10 text-primary animate-pulse" />
-              </div>
-            </div>
-
-            <h2 className="text-lg sm:text-xl font-semibold mb-2">
-              {getStatusMessage(result?.status || "queued")}
-            </h2>
-
-            {/* Progress */}
-            {result?.progress && (
-              <div className="w-full max-w-md mb-4 px-4">
-                <div className="flex justify-between text-xs sm:text-sm text-text-muted mb-1">
-                  <span>
-                    Step {result.progress.current_step} of {result.progress.total_steps}
+      {/* Progress bar */}
+      {(isInProgress || isComplete) && (
+        <div className="space-y-2">
+          <div className="flex items-center justify-between text-sm">
+            <div className="flex items-center gap-2">
+              {isInProgress && (
+                <>
+                  <Loader2 className="w-4 h-4 text-primary animate-spin" />
+                  <span className="text-text-muted">
+                    {result.progress
+                      ? `Step ${result.progress.current_step} of ${result.progress.total_steps}`
+                      : "Starting research..."}
                   </span>
-                  <span>{progressPercent}%</span>
-                </div>
-                <div className="h-2 sm:h-2.5 bg-surface rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-primary progress-bar transition-all duration-500"
-                    style={{ width: `${progressPercent}%` }}
-                  />
-                </div>
-              </div>
-            )}
-
-            {/* Research Steps */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 w-full mt-4 px-2">
-              {researchSteps.map((step, index) => {
-                const Icon = step.icon;
-                const currentStep = result?.progress?.current_step || 0;
-                const isActive = index + 1 === currentStep;
-                const isCompleted = index + 1 < currentStep;
-
-                return (
-                  <div
-                    key={index}
-                    className={`flex flex-col items-center p-2 sm:p-3 rounded-lg transition-colors ${
-                      isActive
-                        ? "bg-primary/10 text-primary"
-                        : isCompleted
-                        ? "bg-success/10 text-success"
-                        : "bg-surface text-text-muted"
-                    }`}
-                  >
-                    <Icon
-                      className={`w-5 h-5 sm:w-6 sm:h-6 mb-1 ${isActive ? "animate-pulse" : ""}`}
-                    />
-                    <span className="text-[10px] sm:text-xs text-center leading-tight">{step.label}</span>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Cancel Button */}
-            <button
-              onClick={handleCancel}
-              disabled={isCancelling}
-              className="btn-secondary mt-6 flex items-center gap-2 min-h-[44px]"
-            >
-              {isCancelling ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Cancelling...
-                </>
-              ) : (
-                <>
-                  <XCircle className="w-4 h-4" />
-                  Cancel Research
                 </>
               )}
-            </button>
-
-            {/* Expected Deliverables */}
-            <div className="mt-6 p-3 sm:p-4 bg-surface rounded-lg w-full max-w-md">
-              <h3 className="font-medium text-sm sm:text-base mb-2">You&apos;ll receive:</h3>
-              <ul className="text-xs sm:text-sm text-text-muted space-y-1">
-                <li>• Comprehensive PDF research report</li>
-                <li>• Data spreadsheet with key metrics</li>
-                <li>• Executive summary document</li>
-                <li>• Cited sources and references</li>
-              </ul>
+              {isComplete && (
+                <>
+                  <CheckCircle className="w-4 h-4 text-green-500" />
+                  <span className="text-green-500 font-medium">Research Complete</span>
+                </>
+              )}
             </div>
+            <span className="text-xs text-text-muted">{progressPercent}%</span>
+          </div>
+          <div className="w-full h-1.5 bg-surface rounded-full overflow-hidden border border-border/40">
+            <div
+              className={`h-full rounded-full transition-all duration-700 ease-out ${
+                isComplete ? "bg-green-500" : "bg-primary"
+              }`}
+              style={{ width: `${progressPercent}%` }}
+            />
           </div>
         </div>
       )}
 
-      {/* Completed State */}
-      {isComplete && (
-        <>
-          {/* Success Header */}
-          <div className="card bg-success/5 border-success/30">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-              <div className="flex items-start gap-3">
-                <CheckCircle className="w-6 h-6 sm:w-8 sm:h-8 text-success flex-shrink-0" />
-                <div>
-                  <h2 className="text-base sm:text-lg font-semibold">Research Complete</h2>
-                  <p className="text-xs sm:text-sm text-text-muted">
-                    Your deliverables are ready to view and download
-                  </p>
-                </div>
-              </div>
-              <button onClick={onReset} className="btn-secondary flex items-center gap-2 w-full sm:w-auto min-h-[44px]">
-                <RefreshCw className="w-4 h-4" />
-                <span>New Research</span>
-              </button>
-            </div>
-          </div>
+      {/* Activity feed */}
+      {result.messages && result.messages.length > 0 && (
+        <ResearchActivityFeed
+          messages={result.messages}
+          isRunning={isInProgress}
+        />
+      )}
 
-          {/* Deliverables */}
+      {/* Cancel button during running */}
+      {isInProgress && (
+        <button
+          onClick={onCancel}
+          className="px-4 py-2 text-sm border border-border rounded-lg hover:bg-surface-hover transition-colors text-text-muted"
+        >
+          Cancel Research
+        </button>
+      )}
+
+      {/* Completed results */}
+      {isComplete && (
+        <div className="space-y-4">
+          {/* Deliverables with View/Download */}
           {(result.deliverables?.length || result.pdf_url) && (
-            <div className="card">
-              <h3 className="font-semibold text-base sm:text-lg mb-3 sm:mb-4 flex items-center gap-2">
-                <Download className="w-4 h-4 sm:w-5 sm:h-5" />
+            <div className="space-y-3">
+              <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                <Download className="w-4 h-4" />
                 Deliverables
               </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                 {result.pdf_url && (
                   <div className="p-3 sm:p-4 bg-surface rounded-lg border border-border">
                     <div className="flex items-center gap-3 mb-3">
                       {getFileIcon("pdf")}
                       <div className="flex-1 min-w-0">
-                        <div className="font-medium text-sm sm:text-base">Research Report</div>
+                        <div className="font-medium text-sm">Research Report</div>
                         <div className="text-xs text-text-muted">PDF Document</div>
                       </div>
                     </div>
-                    <div className="flex flex-col sm:flex-row gap-2">
+                    <div className="flex gap-2">
                       <button
                         onClick={() => handleView(result.pdf_url!, "pdf", "Research Report")}
-                        className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 bg-primary/10 hover:bg-primary/20 text-primary rounded-lg transition-all active:scale-95 text-sm font-medium min-h-[44px]"
+                        className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 bg-primary/10 hover:bg-primary/20 text-primary rounded-lg transition-all text-sm font-medium min-h-[44px]"
                       >
                         <Eye className="w-4 h-4" />
-                        <span>View</span>
+                        View
                       </button>
                       <button
                         onClick={() => handleDownload(result.pdf_url!, "research-report.pdf")}
                         disabled={isDownloading === "research-report.pdf"}
-                        className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 bg-surface-hover hover:bg-border rounded-lg transition-all active:scale-95 text-sm font-medium min-h-[44px]"
+                        className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 bg-surface-hover hover:bg-border rounded-lg transition-all text-sm font-medium min-h-[44px]"
                       >
                         {isDownloading === "research-report.pdf" ? (
                           <Loader2 className="w-4 h-4 animate-spin" />
                         ) : (
                           <Download className="w-4 h-4" />
                         )}
-                        <span>Download</span>
+                        Download
                       </button>
                     </div>
                   </div>
@@ -368,36 +250,31 @@ export default function ResearchResults({
                     <div className="flex items-center gap-3 mb-3">
                       {getFileIcon(deliverable.type)}
                       <div className="flex-1 min-w-0">
-                        <div className="font-medium text-sm sm:text-base">{getFileLabel(deliverable.type)}</div>
+                        <div className="font-medium text-sm">{getFileLabel(deliverable.type)}</div>
                         <div className="text-xs text-text-muted">
                           {deliverable.type.toUpperCase()} File
                         </div>
                       </div>
                     </div>
-                    <div className="flex flex-col sm:flex-row gap-2">
+                    <div className="flex gap-2">
                       <button
                         onClick={() => handleView(deliverable.url, deliverable.type, getFileLabel(deliverable.type))}
-                        className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 bg-primary/10 hover:bg-primary/20 text-primary rounded-lg transition-all active:scale-95 text-sm font-medium min-h-[44px]"
+                        className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 bg-primary/10 hover:bg-primary/20 text-primary rounded-lg transition-all text-sm font-medium min-h-[44px]"
                       >
                         <Eye className="w-4 h-4" />
-                        <span>View</span>
+                        View
                       </button>
                       <button
-                        onClick={() =>
-                          handleDownload(
-                            deliverable.url,
-                            `${deliverable.title}.${deliverable.type}`
-                          )
-                        }
+                        onClick={() => handleDownload(deliverable.url, `${deliverable.title}.${deliverable.type}`)}
                         disabled={isDownloading === `${deliverable.title}.${deliverable.type}`}
-                        className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 bg-surface-hover hover:bg-border rounded-lg transition-all active:scale-95 text-sm font-medium min-h-[44px]"
+                        className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 bg-surface-hover hover:bg-border rounded-lg transition-all text-sm font-medium min-h-[44px]"
                       >
                         {isDownloading === `${deliverable.title}.${deliverable.type}` ? (
                           <Loader2 className="w-4 h-4 animate-spin" />
                         ) : (
                           <Download className="w-4 h-4" />
                         )}
-                        <span>Download</span>
+                        Download
                       </button>
                     </div>
                   </div>
@@ -406,131 +283,117 @@ export default function ResearchResults({
             </div>
           )}
 
-          {/* Research Output */}
+          {/* Full Report (collapsible, with CSS containment + scroll constraint) */}
           {result.output && (
-            <div className="card">
-              <h3 className="font-semibold text-base sm:text-lg mb-3 sm:mb-4">Research Findings</h3>
-              <div className="prose prose-sm sm:prose-base max-w-none">
-                <ReactMarkdown
-                  remarkPlugins={[remarkGfm]}
-                  components={{
-                    a: ({ href, children }) => (
+            <div>
+              <button
+                onClick={() => setShowReport(!showReport)}
+                className="flex items-center gap-2 text-sm font-medium text-foreground hover:text-primary transition-colors"
+              >
+                <BookOpen className="w-4 h-4" />
+                <span>Full Report</span>
+                {showReport ? (
+                  <ChevronUp className="w-4 h-4" />
+                ) : (
+                  <ChevronDown className="w-4 h-4" />
+                )}
+              </button>
+              {showReport && (
+                <div
+                  className="mt-3 rounded-lg border border-border bg-surface max-h-[70vh] overflow-y-auto overflow-x-hidden"
+                  style={{ contain: "layout" }}
+                >
+                  <div
+                    className="p-4 sm:p-6 prose prose-sm max-w-none dark:prose-invert break-words"
+                    style={{ overflowWrap: "anywhere" }}
+                    dangerouslySetInnerHTML={{ __html: reportHtml }}
+                  />
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Sources (collapsible) */}
+          {result.sources && result.sources.length > 0 && (
+            <div>
+              <button
+                onClick={() => setShowSources(!showSources)}
+                className="flex items-center gap-2 text-sm font-medium text-foreground hover:text-primary transition-colors"
+              >
+                <Globe className="w-4 h-4" />
+                <span>{result.sources.length} Sources</span>
+                {showSources ? (
+                  <ChevronUp className="w-4 h-4" />
+                ) : (
+                  <ChevronDown className="w-4 h-4" />
+                )}
+              </button>
+              {showSources && (
+                <div className="mt-2 space-y-1.5">
+                  {result.sources.map((source, i) => {
+                    let domain = "";
+                    try {
+                      domain = new URL(source.url).hostname.replace("www.", "");
+                    } catch {
+                      domain = source.url;
+                    }
+                    return (
                       <a
-                        href={href}
+                        key={i}
+                        href={source.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-primary hover:underline inline-flex items-center gap-1"
+                        className="flex items-center gap-2.5 px-3 py-2 rounded-md bg-surface hover:bg-surface-hover border border-border/60 hover:border-primary/40 group transition-all"
                       >
-                        {children}
-                        <ExternalLink className="w-3 h-3" />
-                      </a>
-                    ),
-                  }}
-                >
-                  {result.output}
-                </ReactMarkdown>
-              </div>
-            </div>
-          )}
-
-          {/* Sources */}
-          {result.sources && result.sources.length > 0 && (
-            <div className="card">
-              <h3 className="font-semibold text-base sm:text-lg mb-3 sm:mb-4">Sources ({result.sources.length})</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
-                {result.sources.map((source, index) => {
-                  let domain = "";
-                  try {
-                    domain = new URL(source.url).hostname.replace("www.", "");
-                  } catch {
-                    domain = source.url;
-                  }
-                  return (
-                    <a
-                      key={index}
-                      href={source.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-3 p-3 bg-surface hover:bg-surface-hover rounded-lg border border-border transition-colors"
-                    >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={`https://www.google.com/s2/favicons?domain=${domain}&sz=32`}
-                        alt=""
-                        className="w-5 h-5 rounded"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).style.display = "none";
-                        }}
-                      />
-                      <div className="flex-1 min-w-0">
-                        <div className="font-medium text-sm truncate">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={`https://www.google.com/s2/favicons?domain=${domain}&sz=16`}
+                          alt=""
+                          className="w-4 h-4 rounded-sm flex-shrink-0"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).style.display = "none";
+                          }}
+                        />
+                        <span className="text-sm text-text-muted group-hover:text-primary transition-colors truncate flex-1">
                           {source.title || domain}
-                        </div>
-                        <div className="text-xs text-text-muted truncate">
-                          {domain}
-                        </div>
-                      </div>
-                      <ExternalLink className="w-4 h-4 text-text-muted flex-shrink-0" />
-                    </a>
-                  );
-                })}
-              </div>
+                        </span>
+                        <ExternalLink className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 text-primary" />
+                      </a>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           )}
 
-          {/* Usage Stats */}
-          {result.usage && (
-            <div className="card">
-              <h3 className="font-semibold text-base sm:text-lg mb-3 sm:mb-4">Research Metrics</h3>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-                <div className="text-center p-3 bg-surface rounded-lg">
-                  <div className="text-xl sm:text-2xl font-bold text-primary">
-                    {result.usage.search_units}
-                  </div>
-                  <div className="text-[10px] sm:text-xs text-text-muted">Search Units</div>
-                </div>
-                <div className="text-center p-3 bg-surface rounded-lg">
-                  <div className="text-xl sm:text-2xl font-bold text-primary">
-                    {result.usage.ai_units}
-                  </div>
-                  <div className="text-[10px] sm:text-xs text-text-muted">AI Units</div>
-                </div>
-                <div className="text-center p-3 bg-surface rounded-lg">
-                  <div className="text-xl sm:text-2xl font-bold text-primary">
-                    {result.usage.compute_units}
-                  </div>
-                  <div className="text-[10px] sm:text-xs text-text-muted">Compute Units</div>
-                </div>
-                <div className="text-center p-3 bg-surface rounded-lg">
-                  <div className="text-xl sm:text-2xl font-bold text-accent">
-                    ${result.usage.total_cost.toFixed(2)}
-                  </div>
-                  <div className="text-[10px] sm:text-xs text-text-muted">Total Cost</div>
-                </div>
-              </div>
-            </div>
-          )}
-        </>
-      )}
-
-      {/* Failed State */}
-      {isFailed && (
-        <div className="card bg-error/5 border-error/30">
-          <div className="flex flex-col items-center text-center py-6 sm:py-8 px-4">
-            <XCircle className="w-12 h-12 sm:w-16 sm:h-16 text-error mb-4" />
-            <h2 className="text-lg sm:text-xl font-semibold mb-2">
-              {result?.status === "cancelled"
-                ? "Research Cancelled"
-                : "Research Failed"}
-            </h2>
-            <p className="text-sm sm:text-base text-text-muted mb-6 max-w-md">
-              {result?.error || "An unexpected error occurred during research."}
-            </p>
-            <button onClick={onReset} className="btn-primary flex items-center gap-2 min-h-[44px]">
+          {/* Actions */}
+          <div className="flex gap-3 pt-2">
+            <button
+              onClick={onReset}
+              className="flex items-center gap-2 px-4 py-2 text-sm bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
+            >
               <RefreshCw className="w-4 h-4" />
-              <span>Try Again</span>
+              New Research
             </button>
           </div>
+        </div>
+      )}
+
+      {/* Failed state */}
+      {isFailed && (
+        <div className="rounded-lg border border-red-500/20 bg-red-500/5 p-4 space-y-3">
+          <div className="flex items-center gap-2">
+            <XCircle className="w-5 h-5 text-red-500" />
+            <h3 className="text-sm font-medium text-red-500">Research Failed</h3>
+          </div>
+          <p className="text-sm text-text-muted">{result.error || "An unknown error occurred"}</p>
+          <button
+            onClick={onReset}
+            className="flex items-center gap-2 px-4 py-2 text-sm bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
+          >
+            <RefreshCw className="w-4 h-4" />
+            Try Again
+          </button>
         </div>
       )}
     </div>
