@@ -462,3 +462,33 @@ body {
 .slide-in-from-left {
   animation-name: slide-in-from-left;
 }
+
+/* Activity feed item fade-in */
+@keyframes activity-item-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.activity-item-enter {
+  animation: activity-item-enter 0.3s ease-out both;
+}
+
+/* Activity feed scrollbar */
+.activity-feed-scroll::-webkit-scrollbar {
+  width: 4px;
+}
+
+.activity-feed-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.activity-feed-scroll::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 2px;
+}

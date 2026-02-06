@@ -14,13 +14,10 @@ import {
   Loader2,
   RefreshCw,
   Clock,
-  Search,
-  Brain,
-  BarChart3,
-  FileCheck,
   Eye,
 } from "lucide-react";
 import FileViewer from "./FileViewer";
+import ResearchActivityFeed from "./ResearchActivityFeed";
 
 interface ResearchResult {
   status: string;
@@ -46,6 +43,10 @@ interface ResearchResult {
     current_step: number;
     total_steps: number;
   };
+  messages?: Array<{
+    role: string;
+    content: string | Array<Record<string, unknown>>;
+  }>;
   error?: string;
 }
 
@@ -61,13 +62,6 @@ interface ViewerState {
   fileType: string;
   title: string;
 }
-
-const researchSteps = [
-  { icon: Search, label: "Searching business databases" },
-  { icon: Brain, label: "Analyzing data and trends" },
-  { icon: BarChart3, label: "Generating insights" },
-  { icon: FileCheck, label: "Compiling deliverables" },
-];
 
 export default function ResearchResults({
   result,
@@ -204,68 +198,35 @@ export default function ResearchResults({
       {(isInProgress || isLoadingData) && (
         <div className="card">
           <div className="flex flex-col items-center text-center">
-            {/* Animated Loading Ring */}
-            <div className="relative w-20 h-20 sm:w-24 sm:h-24 mb-4">
-              <div className="absolute inset-0 border-4 border-primary/20 rounded-full" />
-              <div
-                className="absolute inset-0 border-4 border-primary rounded-full pulse-ring"
-                style={{
-                  clipPath: `polygon(0 0, 100% 0, 100% 100%, 0 100%)`,
-                }}
-              />
-              <div className="absolute inset-0 flex items-center justify-center">
-                <Clock className="w-8 h-8 sm:w-10 sm:h-10 text-primary animate-pulse" />
-              </div>
-            </div>
-
-            <h2 className="text-lg sm:text-xl font-semibold mb-2">
-              {getStatusMessage(result?.status || "queued")}
-            </h2>
-
-            {/* Progress */}
-            {result?.progress && (
-              <div className="w-full max-w-md mb-4 px-4">
-                <div className="flex justify-between text-xs sm:text-sm text-text-muted mb-1">
-                  <span>
-                    Step {result.progress.current_step} of {result.progress.total_steps}
-                  </span>
-                  <span>{progressPercent}%</span>
+            {/* Status + Progress Bar */}
+            <div className="flex items-center gap-3 mb-4 w-full max-w-lg">
+              <Clock className="w-5 h-5 text-primary animate-pulse flex-shrink-0" />
+              <div className="flex-1">
+                <div className="flex items-center justify-between mb-1">
+                  <h2 className="text-sm sm:text-base font-semibold">
+                    {getStatusMessage(result?.status || "queued")}
+                  </h2>
+                  {result?.progress && (
+                    <span className="text-xs text-text-muted">
+                      Step {result.progress.current_step}/{result.progress.total_steps}
+                    </span>
+                  )}
                 </div>
-                <div className="h-2 sm:h-2.5 bg-surface rounded-full overflow-hidden">
+                <div className="h-2 bg-surface rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-primary progress-bar transition-all duration-500"
+                    className="h-full bg-primary progress-bar transition-all duration-700 ease-out"
                     style={{ width: `${progressPercent}%` }}
                   />
                 </div>
               </div>
-            )}
+            </div>
 
-            {/* Research Steps */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 w-full mt-4 px-2">
-              {researchSteps.map((step, index) => {
-                const Icon = step.icon;
-                const currentStep = result?.progress?.current_step || 0;
-                const isActive = index + 1 === currentStep;
-                const isCompleted = index + 1 < currentStep;
-
-                return (
-                  <div
-                    key={index}
-                    className={`flex flex-col items-center p-2 sm:p-3 rounded-lg transition-colors ${
-                      isActive
-                        ? "bg-primary/10 text-primary"
-                        : isCompleted
-                        ? "bg-success/10 text-success"
-                        : "bg-surface text-text-muted"
-                    }`}
-                  >
-                    <Icon
-                      className={`w-5 h-5 sm:w-6 sm:h-6 mb-1 ${isActive ? "animate-pulse" : ""}`}
-                    />
-                    <span className="text-[10px] sm:text-xs text-center leading-tight">{step.label}</span>
-                  </div>
-                );
-              })}
+            {/* Activity Feed */}
+            <div className="w-full">
+              <ResearchActivityFeed
+                messages={result?.messages}
+                isRunning={isInProgress && !isLoadingData}
+              />
             </div>
 
             {/* Cancel Button */}
@@ -286,17 +247,6 @@ export default function ResearchResults({
                 </>
               )}
             </button>
-
-            {/* Expected Deliverables */}
-            <div className="mt-6 p-3 sm:p-4 bg-surface rounded-lg w-full max-w-md">
-              <h3 className="font-medium text-sm sm:text-base mb-2">You&apos;ll receive:</h3>
-              <ul className="text-xs sm:text-sm text-text-muted space-y-1">
-                <li>• Comprehensive PDF research report</li>
-                <li>• Data spreadsheet with key metrics</li>
-                <li>• Executive summary document</li>
-                <li>• Cited sources and references</li>
-              </ul>
-            </div>
           </div>
         </div>
       )}

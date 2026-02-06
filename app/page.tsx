@@ -40,6 +40,10 @@ interface ResearchResult {
     current_step: number;
     total_steps: number;
   };
+  messages?: Array<{
+    role: string;
+    content: string | Array<Record<string, unknown>>;
+  }>;
   error?: string;
 }
 
