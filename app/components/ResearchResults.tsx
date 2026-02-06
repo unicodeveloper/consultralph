@@ -19,6 +19,8 @@ import {
   BookOpen,
   Eye,
   Presentation,
+  Maximize2,
+  X,
 } from "lucide-react";
 import ResearchActivityFeed from "./ResearchActivityFeed";
 
@@ -84,6 +86,7 @@ function getFileLabel(format: string) {
 export default function ResearchResults({ result, onCancel, onReset }: ResearchResultsProps) {
   const [showReport, setShowReport] = useState(true);
   const [showSources, setShowSources] = useState(false);
+  const [reportFullscreen, setReportFullscreen] = useState(false);
   const [isDownloading, setIsDownloading] = useState<string | null>(null);
   const [viewer, setViewer] = useState<ViewerState>({
     isOpen: false,
@@ -104,10 +107,10 @@ export default function ResearchResults({ result, onCancel, onReset }: ResearchR
   const isInProgress = result.status === "queued" || result.status === "running";
   const isFailed = result.status === "failed" || result.status === "cancelled";
 
-  const progressPercent = result.progress
-    ? Math.round((result.progress.current_step / result.progress.total_steps) * 100)
-    : isComplete
-      ? 100
+  const progressPercent = isComplete
+    ? 100
+    : result.progress
+      ? Math.round((result.progress.current_step / result.progress.total_steps) * 100)
       : 0;
 
   const handleDownload = async (url: string, filename: string) => {
@@ -219,98 +222,88 @@ export default function ResearchResults({ result, onCancel, onReset }: ResearchR
       {isComplete && (
         <div className="space-y-4">
           {/* Deliverables with View/Download */}
-          {(result.deliverables?.length || result.pdf_url) && (
-            <div className="space-y-3">
-              <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                <Download className="w-4 h-4" />
-                Deliverables
-              </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                {result.pdf_url && (
-                  <div className="p-3 sm:p-4 bg-surface rounded-lg border border-border">
-                    <div className="flex items-center gap-3 mb-3">
-                      {getFileIcon("pdf")}
-                      <div className="flex-1 min-w-0">
-                        <div className="font-medium text-sm">Research Report</div>
-                        <div className="text-xs text-text-muted">PDF Document</div>
-                      </div>
-                    </div>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => handleView(result.pdf_url!, "pdf", "Research Report")}
-                        className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 bg-primary/10 hover:bg-primary/20 text-primary rounded-lg transition-all text-sm font-medium min-h-[44px]"
-                      >
-                        <Eye className="w-4 h-4" />
-                        View
-                      </button>
-                      <button
-                        onClick={() => handleDownload(result.pdf_url!, "research-report.pdf")}
-                        disabled={isDownloading === "research-report.pdf"}
-                        className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 bg-surface-hover hover:bg-border rounded-lg transition-all text-sm font-medium min-h-[44px]"
-                      >
-                        {isDownloading === "research-report.pdf" ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                          <Download className="w-4 h-4" />
-                        )}
-                        Download
-                      </button>
-                    </div>
-                  </div>
-                )}
-                {result.deliverables?.map((deliverable, index) => (
-                  <div key={index} className="p-3 sm:p-4 bg-surface rounded-lg border border-border">
-                    <div className="flex items-center gap-3 mb-3">
-                      {getFileIcon(deliverable.type)}
-                      <div className="flex-1 min-w-0">
-                        <div className="font-medium text-sm">{getFileLabel(deliverable.type)}</div>
-                        <div className="text-xs text-text-muted">
-                          {deliverable.type.toUpperCase()} File
+          {(result.deliverables?.length || result.pdf_url) && (() => {
+            const allDeliverables = [
+              ...(result.pdf_url
+                ? [{ type: "pdf", title: "research-report", url: result.pdf_url }]
+                : []),
+              ...(result.deliverables ?? []),
+            ];
+            return (
+              <div className="space-y-3">
+                <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                  <Download className="w-4 h-4" />
+                  Deliverables
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {allDeliverables.map((deliverable, index) => {
+                    const filename = `${deliverable.title}.${deliverable.type}`;
+                    return (
+                      <div key={index} className="p-3 sm:p-4 bg-surface rounded-lg border border-border">
+                        <div className="flex items-center gap-3 mb-3">
+                          {getFileIcon(deliverable.type)}
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium text-sm">{getFileLabel(deliverable.type)}</div>
+                            <div className="text-xs text-text-muted">
+                              {deliverable.type.toUpperCase()} File
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handleView(deliverable.url, deliverable.type, getFileLabel(deliverable.type))}
+                            className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 bg-primary/10 hover:bg-primary/20 text-primary rounded-lg transition-all text-sm font-medium min-h-[44px]"
+                          >
+                            <Eye className="w-4 h-4" />
+                            View
+                          </button>
+                          <button
+                            onClick={() => handleDownload(deliverable.url, filename)}
+                            disabled={isDownloading === filename}
+                            className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 bg-surface-hover hover:bg-border rounded-lg transition-all text-sm font-medium min-h-[44px]"
+                          >
+                            {isDownloading === filename ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <Download className="w-4 h-4" />
+                            )}
+                            Download
+                          </button>
                         </div>
                       </div>
-                    </div>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => handleView(deliverable.url, deliverable.type, getFileLabel(deliverable.type))}
-                        className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 bg-primary/10 hover:bg-primary/20 text-primary rounded-lg transition-all text-sm font-medium min-h-[44px]"
-                      >
-                        <Eye className="w-4 h-4" />
-                        View
-                      </button>
-                      <button
-                        onClick={() => handleDownload(deliverable.url, `${deliverable.title}.${deliverable.type}`)}
-                        disabled={isDownloading === `${deliverable.title}.${deliverable.type}`}
-                        className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 bg-surface-hover hover:bg-border rounded-lg transition-all text-sm font-medium min-h-[44px]"
-                      >
-                        {isDownloading === `${deliverable.title}.${deliverable.type}` ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                          <Download className="w-4 h-4" />
-                        )}
-                        Download
-                      </button>
-                    </div>
-                  </div>
-                ))}
+                    );
+                  })}
+                </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
 
           {/* Full Report (collapsible, with CSS containment + scroll constraint) */}
           {result.output && (
             <div>
-              <button
-                onClick={() => setShowReport(!showReport)}
-                className="flex items-center gap-2 text-sm font-medium text-foreground hover:text-primary transition-colors"
-              >
-                <BookOpen className="w-4 h-4" />
-                <span>Full Report</span>
-                {showReport ? (
-                  <ChevronUp className="w-4 h-4" />
-                ) : (
-                  <ChevronDown className="w-4 h-4" />
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setShowReport(!showReport)}
+                  className="flex items-center gap-2 text-sm font-medium text-foreground hover:text-primary transition-colors"
+                >
+                  <BookOpen className="w-4 h-4" />
+                  <span>Full Report</span>
+                  {showReport ? (
+                    <ChevronUp className="w-4 h-4" />
+                  ) : (
+                    <ChevronDown className="w-4 h-4" />
+                  )}
+                </button>
+                {showReport && (
+                  <button
+                    onClick={() => setReportFullscreen(true)}
+                    className="p-1 rounded hover:bg-surface-hover transition-colors text-text-muted hover:text-foreground"
+                    title="Full screen"
+                  >
+                    <Maximize2 className="w-3.5 h-3.5" />
+                  </button>
                 )}
-              </button>
+              </div>
               {showReport && (
                 <div
                   className="mt-3 rounded-lg border border-border bg-surface max-h-[70vh] overflow-y-auto overflow-x-hidden"
@@ -323,6 +316,37 @@ export default function ResearchResults({ result, onCancel, onReset }: ResearchR
                   />
                 </div>
               )}
+            </div>
+          )}
+
+          {/* Full-screen report modal */}
+          {reportFullscreen && reportHtml && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center">
+              <div
+                className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+                onClick={() => setReportFullscreen(false)}
+              />
+              <div className="relative bg-background border border-border rounded-xl shadow-2xl w-[95vw] max-w-5xl h-[90vh] flex flex-col">
+                <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+                  <div className="flex items-center gap-2">
+                    <BookOpen className="w-5 h-5 text-primary" />
+                    <h2 className="font-semibold">Full Report</h2>
+                  </div>
+                  <button
+                    onClick={() => setReportFullscreen(false)}
+                    className="p-2 hover:bg-surface rounded-lg transition-colors"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+                <div className="flex-1 overflow-y-auto overflow-x-hidden">
+                  <div
+                    className="p-6 sm:p-8 prose prose-sm max-w-none dark:prose-invert break-words"
+                    style={{ overflowWrap: "anywhere" }}
+                    dangerouslySetInnerHTML={{ __html: reportHtml }}
+                  />
+                </div>
+              </div>
             </div>
           )}
 

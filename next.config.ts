@@ -9,10 +9,6 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: "https",
-        hostname: "lh3.googleusercontent.com",
-      },
-      {
-        protocol: "https",
         hostname: "avatars.githubusercontent.com",
       },
       {
@@ -29,7 +25,7 @@ const nextConfig: NextConfig = {
           {
             key: "Content-Security-Policy",
             value:
-              "frame-src 'self' https://view.officeapps.live.com https://docs.google.com;",
+              "frame-src 'self' blob: https://view.officeapps.live.com https://docs.google.com;",
           },
         ],
       },

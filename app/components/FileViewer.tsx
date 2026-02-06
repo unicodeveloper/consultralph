@@ -38,11 +38,11 @@ export default function FileViewer({
   const [csvData, setCsvData] = useState<unknown[][] | null>(null);
   const [xlsxData, setXlsxData] = useState<SheetData[] | null>(null);
   const [activeSheet, setActiveSheet] = useState(0);
+  const [pdfBlobUrl, setPdfBlobUrl] = useState<string | null>(null);
 
   const normalizedType = fileType.toLowerCase();
-  const isOfficeFile = ["pdf", "docx", "pptx", "doc", "ppt"].includes(
-    normalizedType
-  );
+  const isPdf = normalizedType === "pdf";
+  const isOfficeFile = ["docx", "pptx", "doc", "ppt"].includes(normalizedType);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -52,10 +52,22 @@ export default function FileViewer({
     setCsvData(null);
     setXlsxData(null);
     setActiveSheet(0);
+    setPdfBlobUrl(null);
+
+    let createdBlobUrl: string | null = null;
 
     const loadFile = async () => {
       try {
-        if (normalizedType === "csv") {
+        if (isPdf) {
+          // Fetch PDF as blob for native browser rendering
+          // Office Online Viewer can't handle pre-signed S3 URLs
+          const response = await fetch(url);
+          if (!response.ok) throw new Error("Failed to fetch PDF file");
+          const blob = await response.blob();
+          createdBlobUrl = URL.createObjectURL(blob);
+          setPdfBlobUrl(createdBlobUrl);
+          setLoading(false);
+        } else if (normalizedType === "csv") {
           const response = await fetch(url);
           if (!response.ok) throw new Error("Failed to fetch CSV file");
           const text = await response.text();
@@ -87,8 +99,7 @@ export default function FileViewer({
           setXlsxData(sheets);
           setLoading(false);
         } else if (isOfficeFile) {
-          // Office files (PDF, DOCX, PPTX) are loaded via Microsoft Office Online Viewer
-          // No client-side processing needed
+          // DOCX, PPTX loaded via Microsoft Office Online Viewer
           setLoading(false);
         } else {
           setError(`Unsupported file type: ${fileType}`);
@@ -101,7 +112,11 @@ export default function FileViewer({
     };
 
     loadFile();
-  }, [isOpen, url, normalizedType, fileType, isOfficeFile]);
+
+    return () => {
+      if (createdBlobUrl) URL.revokeObjectURL(createdBlobUrl);
+    };
+  }, [isOpen, url, normalizedType, fileType, isPdf, isOfficeFile]);
 
   if (!isOpen) return null;
 
@@ -110,13 +125,21 @@ export default function FileViewer({
     return `https://view.officeapps.live.com/op/embed.aspx?src=${encodedUrl}`;
   };
 
-  const handleDownload = () => {
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = title || "deliverable";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  const handleDownload = async () => {
+    try {
+      const response = await fetch(url);
+      const blob = await response.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = title || "deliverable";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(blobUrl);
+    } catch {
+      window.open(url, "_blank");
+    }
   };
 
   const getFileIcon = () => {
@@ -220,7 +243,18 @@ export default function FileViewer({
       );
     }
 
-    // PDF, DOCX, PPTX - Use Microsoft Office Online Viewer
+    // PDF - Use native browser PDF viewer via blob URL
+    if (isPdf && pdfBlobUrl) {
+      return (
+        <iframe
+          src={pdfBlobUrl}
+          className="w-full h-full border-0 rounded-lg"
+          title={title || "PDF Preview"}
+        />
+      );
+    }
+
+    // DOCX, PPTX - Use Microsoft Office Online Viewer
     if (isOfficeFile) {
       return (
         <iframe
