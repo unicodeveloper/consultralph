@@ -227,7 +227,7 @@ export default function Sidebar({
 
       {/* Desktop Sidebar */}
       <aside
-        className={`hidden md:flex flex-col border-r border-border bg-surface transition-all duration-300 h-screen sticky top-0 z-20 ${
+        className={`hidden md:flex flex-col border-r border-border bg-surface transition-all duration-300 h-screen sticky top-0 z-20 relative ${
           isCollapsed ? "w-16" : "w-72"
         }`}
       >
@@ -473,28 +473,28 @@ export default function Sidebar({
         </div>
       </div>
 
-      {/* Collapse Toggle */}
-      <button
+      {/* Edge Toggle Handle */}
+      <div
+        className="absolute -right-3 top-1/2 -translate-y-1/2 z-50 cursor-pointer group"
         onClick={() => setIsCollapsed(!isCollapsed)}
-        className="p-3 border-t border-border hover:bg-surface-hover transition-colors flex items-center justify-center gap-2"
-        aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+        title={isCollapsed ? "Expand sidebar (→)" : "Collapse sidebar (←)"}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            setIsCollapsed(!isCollapsed);
+          }
+        }}
       >
-        {isCollapsed ? (
-          <>
-            <ChevronRight className="w-5 h-5 text-text-muted" />
-            <div className="flex items-center gap-1 bg-muted border border-border px-1.5 py-0.5 rounded text-xs text-muted-foreground">
-              <span>→</span>
-            </div>
-          </>
-        ) : (
-          <>
-            <ChevronLeft className="w-5 h-5 text-text-muted" />
-            <div className="flex items-center gap-1 bg-muted border border-border px-1.5 py-0.5 rounded text-xs text-muted-foreground">
-              <span>←</span>
-            </div>
-          </>
-        )}
-      </button>
+        <div className="flex h-6 w-6 items-center justify-center rounded-full border bg-surface group-hover:bg-surface-hover shadow-sm transition-colors">
+          {isCollapsed ? (
+            <span className="text-[10px] font-medium text-text-muted group-hover:text-foreground">→</span>
+          ) : (
+            <span className="text-[10px] font-medium text-text-muted group-hover:text-foreground">←</span>
+          )}
+        </div>
+      </div>
     </aside>
 
     {/* Mobile Sidebar */}
