@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useRef, useCallback, useEffect } from "react";
+import { Suspense, useState, useRef, useCallback, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import Image from "next/image";
 import ConsultingResearchForm from "./components/ConsultingResearchForm";
 import ResearchResults from "./components/ResearchResults";
@@ -20,12 +21,6 @@ interface ResearchResult {
     title: string;
     url: string;
   }>;
-  usage?: {
-    search_units: number;
-    ai_units: number;
-    compute_units: number;
-    total_cost: number;
-  };
   pdf_url?: string;
   deliverables?: Array<{
     type: string;
@@ -43,10 +38,22 @@ interface ResearchResult {
   error?: string;
 }
 
-export default function Home() {
-  const [researchResult, setResearchResult] = useState<ResearchResult | null>(
-    null
-  );
+// Helper to update URL search params without triggering navigation
+function setResearchParam(taskId: string | null) {
+  const url = new URL(window.location.href);
+  if (taskId) {
+    url.searchParams.set("research", taskId);
+  } else {
+    url.searchParams.delete("research");
+  }
+  window.history.pushState(null, "", url.toString());
+}
+
+function HomeContent() {
+  const searchParams = useSearchParams();
+  const initialResearchId = searchParams.get("research");
+
+  const [researchResult, setResearchResult] = useState<ResearchResult | null>(null);
   const [isResearching, setIsResearching] = useState(false);
   const [currentTaskId, setCurrentTaskId] = useState<string | null>(null);
   const [currentResearchTitle, setCurrentResearchTitle] = useState<string>("");
@@ -60,6 +67,7 @@ export default function Home() {
   const cancelledRef = useRef(false);
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const introVideoRef = useRef<HTMLVideoElement>(null);
+  const initialLoadRef = useRef(false);
   const getAccessToken = useAuthStore((state) => state.getAccessToken);
   const showSignInModal = useAuthStore((state) => state.showSignInModal);
   const openSignInModal = useAuthStore((state) => state.openSignInModal);
@@ -95,6 +103,15 @@ export default function Home() {
         const data = await response.json();
         setResearchResult(data);
 
+        // Set title from output if we don't have one (URL-loaded research)
+        if (!currentResearchTitle && data.output) {
+          // Extract first line or first 60 chars as title
+          const firstLine = data.output.split("\n").find((l: string) => l.trim());
+          if (firstLine) {
+            setCurrentResearchTitle(firstLine.replace(/^#+\s*/, "").slice(0, 60));
+          }
+        }
+
         if (
           data.status === "completed" ||
           data.status === "failed" ||
@@ -108,8 +125,28 @@ export default function Home() {
         console.error("Error polling research status:", error);
       }
     },
-    [clearPolling, getAccessToken]
+    [clearPolling, getAccessToken, currentResearchTitle]
   );
+
+  // Load research from URL param on initial mount
+  useEffect(() => {
+    if (initialLoadRef.current || !initialResearchId) return;
+    initialLoadRef.current = true;
+
+    setCurrentTaskId(initialResearchId);
+    setResearchResult({
+      status: "queued",
+      task_id: initialResearchId,
+    });
+
+    // Fetch current status
+    pollStatus(initialResearchId);
+
+    // Start polling in case it's still running
+    pollIntervalRef.current = setInterval(() => {
+      pollStatus(initialResearchId);
+    }, 10000);
+  }, [initialResearchId, pollStatus]);
 
   const handleTaskCreated = useCallback(
     (taskId: string, title: string, researchType: string) => {
@@ -122,7 +159,9 @@ export default function Home() {
         task_id: taskId,
       });
 
-      // Save to localStorage so history works before platform proxy fix
+      // Update URL with research ID
+      setResearchParam(taskId);
+
       saveToHistory({
         id: taskId,
         title,
@@ -130,10 +169,8 @@ export default function Home() {
         status: "queued",
       });
 
-      // Start polling immediately
       pollStatus(taskId);
 
-      // Then poll every 10 seconds
       pollIntervalRef.current = setInterval(() => {
         pollStatus(taskId);
       }, 10000);
@@ -143,7 +180,6 @@ export default function Home() {
 
   const handleSelectHistory = useCallback(
     (item: ResearchHistoryItem) => {
-      // Clear any existing polling
       clearPolling();
       cancelledRef.current = false;
 
@@ -154,15 +190,15 @@ export default function Home() {
         task_id: item.id,
       });
 
-      // Check if research is still in progress
+      // Update URL with research ID
+      setResearchParam(item.id);
+
       const isInProgress =
         item.status === "queued" || item.status === "processing";
       setIsResearching(isInProgress);
 
-      // Fetch latest status from Valyu
       pollStatus(item.id);
 
-      // If still in progress, start polling
       if (isInProgress) {
         pollIntervalRef.current = setInterval(() => {
           pollStatus(item.id);
@@ -179,6 +215,7 @@ export default function Home() {
     setCurrentTaskId(null);
     setCurrentResearchTitle("");
     cancelledRef.current = false;
+    setResearchParam(null);
   }, [clearPolling]);
 
   const handleCancel = async () => {
@@ -188,12 +225,10 @@ export default function Home() {
     clearPolling();
 
     try {
-      // Build headers with optional auth token
       const headers: HeadersInit = {
         "Content-Type": "application/json",
       };
 
-      // Add authorization header if user is authenticated
       const accessToken = getAccessToken();
       if (accessToken) {
         headers["Authorization"] = `Bearer ${accessToken}`;
@@ -211,6 +246,7 @@ export default function Home() {
     setIsResearching(false);
     setResearchResult(null);
     setCurrentTaskId(null);
+    setResearchParam(null);
   };
 
   const handleReset = () => {
@@ -220,12 +256,12 @@ export default function Home() {
     setCurrentTaskId(null);
     setCurrentResearchTitle("");
     cancelledRef.current = false;
+    setResearchParam(null);
   };
 
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Don't trigger shortcuts when typing in input fields
       const target = e.target as HTMLElement;
       if (
         target.tagName === "INPUT" ||
@@ -235,7 +271,6 @@ export default function Home() {
         return;
       }
 
-      // Left/Right arrow keys to collapse/expand sidebar (desktop only)
       if (e.key === "ArrowLeft") {
         e.preventDefault();
         setIsSidebarCollapsed(true);
@@ -264,9 +299,7 @@ export default function Home() {
 
       const tryUnmute = async () => {
         try {
-          // Start playing muted
           await video.play();
-          // Wait a tiny bit then try to unmute
           setTimeout(() => {
             video.muted = false;
             setIntroStarted(true);
@@ -317,7 +350,6 @@ export default function Home() {
               className="max-w-full max-h-full object-contain"
               onEnded={handleIntroEnd}
             />
-            {/* Play button overlay */}
             {!introStarted && (
               <div className="absolute inset-0 flex items-center justify-center px-4">
                 <button
@@ -331,7 +363,6 @@ export default function Home() {
                 </button>
               </div>
             )}
-            {/* Subtitles - only show when playing */}
             {introStarted && (
               <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 text-center px-6 max-w-4xl">
                 <p className="text-white text-2xl md:text-4xl font-semibold mb-4 drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">
@@ -345,7 +376,6 @@ export default function Home() {
                 </p>
               </div>
             )}
-            {/* Skip button */}
             <button
               onClick={handleIntroEnd}
               className="absolute top-8 right-8 text-white/80 hover:text-white transition-colors text-sm md:text-base px-4 py-2 border border-white/30 rounded-lg hover:bg-white/10"
@@ -436,7 +466,6 @@ export default function Home() {
                     <span className="text-foreground">ConsultRalph</span>
                   </h1>
                   <div className="relative group cursor-pointer" onClick={() => !isVideoPlaying && setIsVideoPlaying(true)}>
-                    {/* Ralph image/video */}
                     <div className="relative w-24 h-24 sm:w-28 sm:h-28 md:w-44 md:h-44">
                       {isVideoPlaying ? (
                         <video
@@ -457,7 +486,6 @@ export default function Home() {
                         />
                       )}
                     </div>
-                    {/* Ornate picture frame overlay - only shows when video is playing */}
                     {isVideoPlaying && (
                       <svg
                         className="absolute inset-0 w-full h-full pointer-events-none"
@@ -475,26 +503,16 @@ export default function Home() {
                             <stop offset="100%" style={{ stopColor: '#c19a6b', stopOpacity: 0.2 }} />
                           </linearGradient>
                         </defs>
-
-                        {/* Outer frame border */}
                         <rect x="2" y="2" width="196" height="196" fill="none" stroke="url(#frameGradient)" strokeWidth="16" rx="4" />
-
-                        {/* Inner decorative border */}
                         <rect x="10" y="10" width="180" height="180" fill="none" stroke="url(#frameGradient)" strokeWidth="3" rx="2" />
-
-                        {/* Corner ornaments */}
                         <circle cx="20" cy="20" r="4" fill="url(#frameHighlight)" />
                         <circle cx="180" cy="20" r="4" fill="url(#frameHighlight)" />
                         <circle cx="20" cy="180" r="4" fill="url(#frameHighlight)" />
                         <circle cx="180" cy="180" r="4" fill="url(#frameHighlight)" />
-
-                        {/* Side ornaments */}
                         <circle cx="100" cy="10" r="3" fill="url(#frameHighlight)" />
                         <circle cx="100" cy="190" r="3" fill="url(#frameHighlight)" />
                         <circle cx="10" cy="100" r="3" fill="url(#frameHighlight)" />
                         <circle cx="190" cy="100" r="3" fill="url(#frameHighlight)" />
-
-                        {/* Inner shadow effect */}
                         <rect x="18" y="18" width="164" height="164" fill="none" stroke="#00000020" strokeWidth="1" rx="2" />
                       </svg>
                     )}
@@ -614,5 +632,14 @@ export default function Home() {
         onOpenChange={(open) => open ? openSignInModal() : closeSignInModal()}
       />
     </div>
+  );
+}
+
+// Wrap in Suspense for useSearchParams (Next.js 15 requirement)
+export default function Home() {
+  return (
+    <Suspense>
+      <HomeContent />
+    </Suspense>
   );
 }

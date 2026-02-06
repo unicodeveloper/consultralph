@@ -149,6 +149,19 @@ export default function ResearchResults({ result, onCancel, onReset }: ResearchR
         onClose={closeViewer}
       />
 
+      {/* Research intro - shown while in progress */}
+      {isInProgress && (
+        <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-2">
+          <div className="flex items-center gap-2">
+            <Loader2 className="w-4 h-4 text-primary animate-spin" />
+            <span className="text-sm font-medium text-foreground">Agent researching your topic</span>
+          </div>
+          <p className="text-sm text-text-muted">
+            Generating report and deliverables (PowerPoint, Excel, Word). Expected around 5-10 minutes.
+          </p>
+        </div>
+      )}
+
       {/* Progress bar */}
       {(isInProgress || isComplete) && (
         <div className="space-y-2">

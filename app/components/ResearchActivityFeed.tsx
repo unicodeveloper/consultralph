@@ -134,7 +134,7 @@ const ReasoningItem = React.memo(
           <Brain className="w-3.5 h-3.5 text-blue-400" />
           <span className="text-xs font-medium text-blue-400">Reasoning</span>
         </div>
-        <div className="prose prose-sm max-w-none prose-invert text-sm text-text-muted leading-relaxed overflow-hidden break-words">
+        <div className="prose prose-sm max-w-none prose-invert text-sm text-text-muted leading-relaxed overflow-hidden break-words min-w-0" style={{ overflowWrap: "anywhere" }}>
           <ReactMarkdown remarkPlugins={[remarkGfm]}>{text}</ReactMarkdown>
         </div>
       </div>
@@ -389,11 +389,11 @@ export default function ResearchActivityFeed({
   }
 
   return (
-    <div className="w-full mt-4 min-w-0 overflow-hidden">
+    <div className="w-full mt-4 min-w-0 overflow-hidden" style={{ contain: "inline-size" }}>
       {/* Collapsed header / toggle */}
       <button
         onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full flex items-center justify-between px-4 py-2.5 rounded-lg bg-surface border border-border hover:bg-surface-hover transition-colors text-left"
+        className="w-full flex items-center justify-between px-4 py-2.5 rounded-lg bg-surface border border-border hover:bg-surface-hover transition-colors text-left min-w-0 overflow-hidden"
       >
         <div className="flex items-center gap-2">
           <Brain className="w-4 h-4 text-primary" />
@@ -418,11 +418,11 @@ export default function ResearchActivityFeed({
 
       {/* Expanded feed */}
       {isExpanded && (
-        <div className="relative mt-2">
+        <div className="relative mt-2 min-w-0 overflow-hidden">
           <div
             ref={feedRef}
             onScroll={handleScroll}
-            className="max-h-[400px] overflow-y-auto overflow-x-hidden space-y-3 pr-1 activity-feed-scroll"
+            className="max-h-[400px] overflow-y-auto overflow-x-hidden space-y-3 pr-1 activity-feed-scroll min-w-0"
           >
             {timeline.map((item) => {
               if (item.type === "user") {
