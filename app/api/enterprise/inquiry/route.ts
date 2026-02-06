@@ -2,17 +2,15 @@ import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
 import { EnterpriseInquiryEmail } from "@/app/lib/email-templates/enterprise-inquiry";
 
-const ENTERPRISE_RECIPIENTS = [
-  "harvey@valyu.ai",
-  "hirsh@valyu.ai",
-  "alexander.ng@valyu.ai",
-  "henk@valyu.ai",
-];
+const ENTERPRISE_RECIPIENTS = (process.env.ENTERPRISE_RECIPIENTS || "")
+  .split(",")
+  .map((e) => e.trim())
+  .filter(Boolean);
 
 export async function POST(req: NextRequest) {
   try {
     const apiKey = process.env.RESEND_API_KEY;
-    if (!apiKey) {
+    if (!apiKey || ENTERPRISE_RECIPIENTS.length === 0) {
       return NextResponse.json(
         { error: "Email service not configured" },
         { status: 500 }
