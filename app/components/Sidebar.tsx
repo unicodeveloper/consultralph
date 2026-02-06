@@ -24,7 +24,7 @@ import {
   Lock,
   X,
 } from "lucide-react";
-import { ResearchHistoryItem } from "@/app/lib/researchHistory";
+import { ResearchHistoryItem, getResearchHistory, removeFromHistory, clearHistory } from "@/app/lib/researchHistory";
 import { useAuthStore } from "@/app/stores/auth-store";
 import { useThemeStore } from "@/app/stores/theme-store";
 
@@ -114,9 +114,9 @@ export default function Sidebar({
           ? `/api/consulting-research/list?accessToken=${encodeURIComponent(accessToken)}`
           : `/api/consulting-research/list`;
         const response = await fetch(url);
-        if (!response.ok) return;
+        if (!response.ok) throw new Error("API returned " + response.status);
         const data = await response.json();
-        if (data.tasks) {
+        if (data.tasks && data.tasks.length > 0) {
           const mapped: ResearchHistoryItem[] = data.tasks.map(
             (task: { deepresearch_id: string; query: string; status: string; created_at: number }) => ({
               id: task.deepresearch_id,
@@ -127,9 +127,15 @@ export default function Sidebar({
             })
           );
           setHistory(mapped);
+          return;
         }
       } catch (error) {
-        console.error("Failed to fetch research history:", error);
+        console.error("Failed to fetch research history from API:", error);
+      }
+      // Fall back to localStorage if API fails or returns empty
+      const localHistory = getResearchHistory();
+      if (localHistory.length > 0) {
+        setHistory(localHistory);
       }
     };
 
@@ -142,11 +148,13 @@ export default function Sidebar({
 
   const handleRemoveItem = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
+    removeFromHistory(id);
     setHistory((prev) => prev.filter((h) => h.id !== id));
   };
 
   const handleClearHistory = () => {
     if (confirm("Are you sure you want to clear all research history?")) {
+      clearHistory();
       setHistory([]);
     }
   };
