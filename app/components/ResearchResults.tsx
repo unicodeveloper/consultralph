@@ -98,7 +98,11 @@ export default function ResearchResults({ result, onCancel, onReset }: ResearchR
   // Only compute HTML when report is expanded - avoids work on initial render
   const reportHtml = useMemo(() => {
     if (!showReport || !result?.output) return "";
-    return marked(result.output, { gfm: true, breaks: true }) as string;
+    const renderer = new marked.Renderer();
+    renderer.link = ({ href, text }) => {
+      return `<a href="${href}" target="_blank" rel="noopener noreferrer">${text}</a>`;
+    };
+    return marked(result.output, { gfm: true, breaks: true, renderer }) as string;
   }, [showReport, result?.output]);
 
   if (!result) return null;
@@ -303,7 +307,7 @@ export default function ResearchResults({ result, onCancel, onReset }: ResearchR
               </div>
               {showReport && (
                 <div
-                  className="mt-3 rounded-lg border border-border bg-surface max-h-[70vh] overflow-y-auto overflow-x-hidden"
+                  className="mt-3 rounded-lg border border-border bg-surface max-h-[70vh] overflow-y-auto overflow-x-auto"
                   style={{ contain: "layout" }}
                 >
                   <div
@@ -336,9 +340,9 @@ export default function ResearchResults({ result, onCancel, onReset }: ResearchR
                     <X className="w-5 h-5" />
                   </button>
                 </div>
-                <div className="flex-1 overflow-y-auto overflow-x-hidden">
+                <div className="flex-1 overflow-y-auto overflow-x-auto">
                   <div
-                    className="p-6 sm:p-8 prose prose-sm max-w-none dark:prose-invert break-words"
+                    className="p-4 sm:p-6 md:p-8 prose prose-sm max-w-none dark:prose-invert break-words"
                     style={{ overflowWrap: "anywhere" }}
                     dangerouslySetInnerHTML={{ __html: reportHtml }}
                   />

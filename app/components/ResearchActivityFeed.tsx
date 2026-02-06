@@ -422,7 +422,7 @@ export default function ResearchActivityFeed({
           <div
             ref={feedRef}
             onScroll={handleScroll}
-            className="max-h-[400px] overflow-y-auto overflow-x-hidden space-y-3 pr-1 activity-feed-scroll min-w-0"
+            className="max-h-[60vh] sm:max-h-[400px] overflow-y-auto overflow-x-hidden space-y-3 pr-1 activity-feed-scroll min-w-0"
           >
             {timeline.map((item) => {
               if (item.type === "user") {

@@ -322,7 +322,7 @@ export default function FileViewer({
         <div className="flex items-center justify-between px-4 py-3 border-b border-border">
           <div className="flex items-center gap-3">
             {getFileIcon()}
-            <h2 className="font-semibold truncate max-w-md">{title}</h2>
+            <h2 className="font-semibold truncate max-w-[50vw] sm:max-w-md">{title}</h2>
             <span className="px-2 py-0.5 text-xs font-medium bg-primary/10 text-primary rounded uppercase">
               {fileType}
             </span>

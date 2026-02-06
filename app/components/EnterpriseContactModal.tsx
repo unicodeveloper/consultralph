@@ -119,17 +119,17 @@ export default function EnterpriseContactModal({ open, onClose }: EnterpriseCont
             </p>
           </div>
         ) : (
-          <div className="p-6">
+          <div className="p-4 sm:p-6">
             {/* Hero */}
             <div className="text-center mb-8">
               <div className="inline-flex items-center justify-center w-14 h-14 bg-surface rounded-2xl mb-4">
                 <Building2 className="w-7 h-7 text-foreground" />
               </div>
-              <h2 className="text-2xl font-bold text-foreground mb-2">
+              <h2 className="text-xl sm:text-2xl font-bold text-foreground mb-2">
                 Enterprise Consulting Intelligence
               </h2>
               <p className="text-text-muted text-sm max-w-md mx-auto">
-                Deploy enterprise-grade research and AI consulting agents in your organization
+                Deploy enterprise-grade research and AI consulting agents with zero data retention, dedicated infrastructure, and custom data sources
               </p>
             </div>
 
@@ -154,7 +154,7 @@ export default function EnterpriseContactModal({ open, onClose }: EnterpriseCont
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label htmlFor="companySize" className="block text-sm font-medium text-text-muted mb-1">
                       Company Size
@@ -212,7 +212,7 @@ export default function EnterpriseContactModal({ open, onClose }: EnterpriseCont
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label htmlFor="contactEmail" className="block text-sm font-medium text-text-muted mb-1">
                       Email <span className="text-red-500">*</span>
