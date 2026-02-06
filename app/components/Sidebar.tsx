@@ -234,7 +234,7 @@ export default function Sidebar({
       {/* Header */}
       <div className="p-4 border-b border-border">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
+          <a href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
             <div className="relative w-9 h-9 flex-shrink-0">
               <Image
                 src="/consultralph.png"
@@ -247,7 +247,7 @@ export default function Sidebar({
             {!isCollapsed && (
               <span className="font-semibold text-sm">Consulting Intel</span>
             )}
-          </div>
+          </a>
           {!isCollapsed && (
             <button
               onClick={() => setIsCollapsed(true)}
@@ -506,7 +506,7 @@ export default function Sidebar({
       {/* Header */}
       <div className="p-4 border-b border-border">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
+          <a href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
             <div className="relative w-9 h-9 flex-shrink-0">
               <Image
                 src="/consultralph.png"
@@ -517,7 +517,7 @@ export default function Sidebar({
               />
             </div>
             <span className="font-semibold text-sm">Consulting Intel</span>
-          </div>
+          </a>
           <button
             onClick={onMobileToggle}
             className="p-1.5 hover:bg-surface-hover rounded-lg transition-colors"
