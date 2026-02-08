@@ -234,7 +234,7 @@ export default function Sidebar({
       {/* Header */}
       <div className="p-4 border-b border-border">
         <div className="flex items-center justify-between">
-          <Link href="/" onClick={(e) => { e.preventDefault(); onNewResearch?.(); }} className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+          <Link href="/" onClick={() => onNewResearch?.()} className="flex items-center gap-3 hover:opacity-80 transition-opacity">
             <div className="relative w-9 h-9 flex-shrink-0">
               <Image
                 src="/consultralph.png"
@@ -506,7 +506,7 @@ export default function Sidebar({
       {/* Header */}
       <div className="p-4 border-b border-border">
         <div className="flex items-center justify-between">
-          <Link href="/" onClick={(e) => { e.preventDefault(); onNewResearch?.(); }} className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+          <Link href="/" onClick={() => onNewResearch?.()} className="flex items-center gap-3 hover:opacity-80 transition-opacity">
             <div className="relative w-9 h-9 flex-shrink-0">
               <Image
                 src="/consultralph.png"

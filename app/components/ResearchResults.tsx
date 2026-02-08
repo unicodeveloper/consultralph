@@ -9,12 +9,10 @@ import {
   FileSpreadsheet,
   File,
   Download,
-  ExternalLink,
   ChevronDown,
   ChevronUp,
   Loader2,
   RefreshCw,
-  Globe,
   BookOpen,
   Eye,
   Presentation,
@@ -23,7 +21,6 @@ import {
 } from "lucide-react";
 import ResearchActivityFeed from "./ResearchActivityFeed";
 import MarkdownRenderer from "./MarkdownRenderer";
-import { Favicon } from "@/app/components/ui/Favicon";
 
 // Lazy-load FileViewer to avoid bundling papaparse + xlsx eagerly
 const FileViewer = dynamic(() => import("./FileViewer"), { ssr: false });
@@ -86,7 +83,7 @@ function getFileLabel(format: string) {
 
 export default function ResearchResults({ result, onCancel, onReset }: ResearchResultsProps) {
   const [showReport, setShowReport] = useState(true);
-  const [showSources, setShowSources] = useState(false);
+
   const [reportFullscreen, setReportFullscreen] = useState(false);
   const [isDownloading, setIsDownloading] = useState<string | null>(null);
   const [viewer, setViewer] = useState<ViewerState>({
@@ -343,51 +340,6 @@ export default function ResearchResults({ result, onCancel, onReset }: ResearchR
                   </div>
                 </div>
               </div>
-            </div>
-          )}
-
-          {/* Sources (collapsible) */}
-          {result.sources && result.sources.length > 0 && (
-            <div>
-              <button
-                onClick={() => setShowSources(!showSources)}
-                className="flex items-center gap-2 text-sm font-medium text-foreground hover:text-primary transition-colors"
-              >
-                <Globe className="w-4 h-4" />
-                <span>{result.sources.length} Sources</span>
-                {showSources ? (
-                  <ChevronUp className="w-4 h-4" />
-                ) : (
-                  <ChevronDown className="w-4 h-4" />
-                )}
-              </button>
-              {showSources && (
-                <div className="mt-2 space-y-1.5">
-                  {result.sources.map((source, i) => {
-                    let domain = "";
-                    try {
-                      domain = new URL(source.url).hostname.replace("www.", "");
-                    } catch {
-                      domain = source.url;
-                    }
-                    return (
-                      <a
-                        key={i}
-                        href={source.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-2.5 px-3 py-2 rounded-md bg-surface hover:bg-surface-hover border border-border/60 hover:border-primary/40 group transition-all"
-                      >
-                        <Favicon url={source.url} className="w-4 h-4 rounded-sm flex-shrink-0" />
-                        <span className="text-sm text-text-muted group-hover:text-primary transition-colors truncate flex-1">
-                          {source.title || domain}
-                        </span>
-                        <ExternalLink className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 text-primary" />
-                      </a>
-                    );
-                  })}
-                </div>
-              )}
             </div>
           )}
 
