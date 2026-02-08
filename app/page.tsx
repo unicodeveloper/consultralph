@@ -6,6 +6,7 @@ import Image from "next/image";
 import ConsultingResearchForm from "./components/ConsultingResearchForm";
 import ResearchResults from "./components/ResearchResults";
 import Sidebar from "./components/Sidebar";
+import ExampleReports from "./components/ExampleReports";
 import GitHubCorner from "./components/GitHubCorner";
 import { SignInModal } from "./components/auth";
 import { X } from "lucide-react";
@@ -176,6 +177,67 @@ function HomeContent() {
       }, 10000);
     },
     [pollStatus]
+  );
+
+  const pollPublicStatus = useCallback(
+    async (taskId: string) => {
+      try {
+        const response = await fetch(`/api/consulting-research/public-status?taskId=${taskId}`);
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.message || "Failed to fetch public report");
+        }
+        const data = await response.json();
+        setResearchResult(data);
+
+        if (!currentResearchTitle && data.output) {
+          const firstLine = data.output.split("\n").find((l: string) => l.trim());
+          if (firstLine) {
+            setCurrentResearchTitle(firstLine.replace(/^#+\s*/, "").slice(0, 60));
+          }
+        }
+
+        if (data.status === "completed" || data.status === "failed" || data.status === "cancelled") {
+          clearPolling();
+          setIsResearching(false);
+        }
+      } catch (error) {
+        console.error("Error fetching public report:", error);
+      }
+    },
+    [currentResearchTitle, clearPolling]
+  );
+
+  const handleSelectExample = useCallback(
+    (taskId: string, title: string) => {
+      clearPolling();
+      cancelledRef.current = false;
+
+      setCurrentTaskId(taskId);
+      setCurrentResearchTitle(title);
+      setResearchResult({
+        status: "queued",
+        task_id: taskId,
+      });
+
+      setResearchParam(taskId);
+
+      // Fetch immediately, then poll if still running
+      pollPublicStatus(taskId).then(() => {
+        // Check if still running after initial fetch
+        setResearchResult((prev) => {
+          const isStillRunning = prev?.status === "queued" || prev?.status === "running";
+          setIsResearching(isStillRunning);
+          if (isStillRunning) {
+            pollIntervalRef.current = setInterval(() => {
+              pollPublicStatus(taskId);
+            }, 10000);
+          }
+          return prev;
+        });
+      });
+    },
+    [clearPolling, pollPublicStatus]
   );
 
   const handleSelectHistory = useCallback(
@@ -533,6 +595,9 @@ function HomeContent() {
                   isResearching={isResearching}
                 />
               </div>
+
+              {/* Example Reports */}
+              <ExampleReports onSelectExample={handleSelectExample} />
 
               {/* Features */}
               <div className="mt-8 sm:mt-12 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 max-w-5xl w-full px-2">
