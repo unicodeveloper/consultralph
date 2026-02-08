@@ -1,8 +1,7 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState } from "react";
 import dynamic from "next/dynamic";
-import { marked } from "marked";
 import {
   CheckCircle,
   XCircle,
@@ -23,6 +22,8 @@ import {
   X,
 } from "lucide-react";
 import ResearchActivityFeed from "./ResearchActivityFeed";
+import MarkdownRenderer from "./MarkdownRenderer";
+import { Favicon } from "@/app/components/ui/Favicon";
 
 // Lazy-load FileViewer to avoid bundling papaparse + xlsx eagerly
 const FileViewer = dynamic(() => import("./FileViewer"), { ssr: false });
@@ -95,15 +96,7 @@ export default function ResearchResults({ result, onCancel, onReset }: ResearchR
     title: "",
   });
 
-  // Only compute HTML when report is expanded - avoids work on initial render
-  const reportHtml = useMemo(() => {
-    if (!showReport || !result?.output) return "";
-    const renderer = new marked.Renderer();
-    renderer.link = ({ href, text }) => {
-      return `<a href="${href}" target="_blank" rel="noopener noreferrer">${text}</a>`;
-    };
-    return marked(result.output, { gfm: true, breaks: true, renderer }) as string;
-  }, [showReport, result?.output]);
+  const reportContent = showReport && result?.output ? result.output : "";
 
   if (!result) return null;
 
@@ -305,23 +298,24 @@ export default function ResearchResults({ result, onCancel, onReset }: ResearchR
                   </button>
                 )}
               </div>
-              {showReport && (
+              {showReport && reportContent && (
                 <div
                   className="mt-3 rounded-lg border border-border bg-surface max-h-[70vh] overflow-y-auto overflow-x-auto"
                   style={{ contain: "layout" }}
                 >
                   <div
-                    className="p-4 sm:p-6 prose prose-sm max-w-none dark:prose-invert break-words"
+                    className="p-4 sm:p-6 break-words"
                     style={{ overflowWrap: "anywhere" }}
-                    dangerouslySetInnerHTML={{ __html: reportHtml }}
-                  />
+                  >
+                    <MarkdownRenderer content={reportContent} inlineCitations />
+                  </div>
                 </div>
               )}
             </div>
           )}
 
           {/* Full-screen report modal */}
-          {reportFullscreen && reportHtml && (
+          {reportFullscreen && reportContent && (
             <div className="fixed inset-0 z-50 flex items-center justify-center">
               <div
                 className="absolute inset-0 bg-black/60 backdrop-blur-sm"
@@ -342,10 +336,11 @@ export default function ResearchResults({ result, onCancel, onReset }: ResearchR
                 </div>
                 <div className="flex-1 overflow-y-auto overflow-x-auto">
                   <div
-                    className="p-4 sm:p-6 md:p-8 prose prose-sm max-w-none dark:prose-invert break-words"
+                    className="p-4 sm:p-6 md:p-8 break-words"
                     style={{ overflowWrap: "anywhere" }}
-                    dangerouslySetInnerHTML={{ __html: reportHtml }}
-                  />
+                  >
+                    <MarkdownRenderer content={reportContent} inlineCitations />
+                  </div>
                 </div>
               </div>
             </div>
@@ -383,15 +378,7 @@ export default function ResearchResults({ result, onCancel, onReset }: ResearchR
                         rel="noopener noreferrer"
                         className="flex items-center gap-2.5 px-3 py-2 rounded-md bg-surface hover:bg-surface-hover border border-border/60 hover:border-primary/40 group transition-all"
                       >
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={`https://www.google.com/s2/favicons?domain=${domain}&sz=16`}
-                          alt=""
-                          className="w-4 h-4 rounded-sm flex-shrink-0"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).style.display = "none";
-                          }}
-                        />
+                        <Favicon url={source.url} className="w-4 h-4 rounded-sm flex-shrink-0" />
                         <span className="text-sm text-text-muted group-hover:text-primary transition-colors truncate flex-1">
                           {source.title || domain}
                         </span>

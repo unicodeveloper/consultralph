@@ -13,6 +13,7 @@ import {
   ExternalLink,
   ArrowDown,
 } from "lucide-react";
+import { Favicon } from "@/app/components/ui/Favicon";
 
 // --- Types ---
 
@@ -230,15 +231,7 @@ const ToolCallItem = React.memo(
                     className="flex items-center gap-2.5 px-3 py-2 rounded-md bg-surface hover:bg-surface-hover border border-border/60 hover:border-primary/40 group transition-all min-w-0"
                     onClick={(e) => e.stopPropagation()}
                   >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={`https://www.google.com/s2/favicons?domain=${domain}&sz=16`}
-                      alt=""
-                      className="w-4 h-4 rounded-sm flex-shrink-0"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).style.display = "none";
-                      }}
-                    />
+                    <Favicon url={source.url} className="w-4 h-4 rounded-sm flex-shrink-0" />
                     <span className="text-xs text-text-muted flex-1 group-hover:text-primary transition-colors truncate min-w-0">
                       {source.title || domain}
                     </span>
