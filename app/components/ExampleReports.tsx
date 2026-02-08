@@ -12,15 +12,15 @@ interface ExampleReport {
 const EXAMPLE_REPORTS: ExampleReport[] = [
   {
     id: "9a637dbb-39b9-4450-ac30-af76c333fcd1",
-    title: "AI Infrastructure Market Analysis",
-    description: "Deep market analysis of AI infrastructure companies, competitive landscape, and growth drivers",
-    type: "Market Analysis",
+    title: "SpaceX Acquisition of xAI",
+    description: "Deep research into SpaceX's acquisition of xAI, strategic rationale, valuation, and market implications",
+    type: "Due Diligence",
   },
   {
     id: "7d497a3b-e272-4b60-bf9d-de71af0830f5",
-    title: "Enterprise SaaS Due Diligence",
-    description: "Comprehensive due diligence report covering financials, risks, and strategic positioning",
-    type: "Due Diligence",
+    title: "Space Data Centres",
+    description: "Comprehensive analysis of the space data centre market, key players, technology feasibility, and growth drivers",
+    type: "Market Analysis",
   },
 ];
 
