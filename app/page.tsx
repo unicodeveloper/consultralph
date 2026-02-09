@@ -58,15 +58,11 @@ function HomeContent() {
   const [isResearching, setIsResearching] = useState(false);
   const [currentTaskId, setCurrentTaskId] = useState<string | null>(null);
   const [currentResearchTitle, setCurrentResearchTitle] = useState<string>("");
-  const [showDiscordBanner, setShowDiscordBanner] = useState(() => {
-    if (typeof window === "undefined") return false;
-    return !localStorage.getItem("consultralph_discord_dismissed");
-  });
+  const [showDiscordBanner, setShowDiscordBanner] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);
   const [showIntro, setShowIntro] = useState(false);
-  const [introStarted, setIntroStarted] = useState(false);
 
   const cancelledRef = useRef(false);
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -365,47 +361,23 @@ function HomeContent() {
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, []);
 
-  // Check if first visit
+  // Check if first visit + discord banner
   useEffect(() => {
     const hasSeenIntro = localStorage.getItem("consultralph_intro_seen");
     if (!hasSeenIntro) {
       setShowIntro(true);
     }
+    if (!localStorage.getItem("consultralph_discord_dismissed")) {
+      setShowDiscordBanner(true);
+    }
   }, []);
 
-  // Try to enable audio after video starts playing
-  useEffect(() => {
-    if (showIntro && introVideoRef.current) {
-      const video = introVideoRef.current;
+  // No autoplay — user clicks play via video controls
 
-      const tryUnmute = async () => {
-        try {
-          await video.play();
-          setTimeout(() => {
-            video.muted = false;
-            setIntroStarted(true);
-          }, 100);
-        } catch {
-          console.log('Autoplay with sound blocked, showing play button');
-        }
-      };
-
-      tryUnmute();
-    }
-  }, [showIntro]);
-
-  const handleIntroStart = () => {
-    setIntroStarted(true);
-    if (introVideoRef.current) {
-      introVideoRef.current.muted = false;
-      introVideoRef.current.play();
-    }
-  };
 
   const handleIntroEnd = () => {
     localStorage.setItem("consultralph_intro_seen", "true");
     setShowIntro(false);
-    setIntroStarted(false);
   };
 
   // Cleanup on unmount
@@ -419,50 +391,99 @@ function HomeContent() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* First-time intro video */}
+      {/* First-time intro video — Cinematic Noir */}
       {showIntro && (
-        <div className="fixed inset-0 z-[100] bg-black flex items-center justify-center">
-          <div className="relative w-full h-full flex items-center justify-center pb-24 md:pb-32">
-            <video
-              ref={introVideoRef}
-              src="/ralph.mp4"
-              playsInline
-              muted
-              className="max-w-full max-h-full object-contain"
-              onEnded={handleIntroEnd}
-            />
-            {!introStarted && (
-              <div className="absolute inset-0 flex items-center justify-center px-4">
-                <button
-                  onClick={handleIntroStart}
-                  className="bg-white/90 hover:bg-white active:bg-white text-black px-6 py-3 md:px-8 md:py-4 rounded-full text-lg md:text-xl font-semibold shadow-2xl transition-all hover:scale-105 active:scale-95 flex items-center gap-2 md:gap-3"
+        <div className="fixed inset-0 z-[100] bg-[#0a0a0a] flex flex-col items-center justify-center px-4 sm:px-8 overflow-hidden">
+          {/* Film grain texture overlay */}
+          <div
+            className="intro-grain pointer-events-none absolute inset-0 z-10 opacity-[0.03]"
+            style={{
+              backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E")`,
+              backgroundSize: "128px 128px",
+            }}
+          />
+
+          {/* Subtle radial glow behind video area */}
+          <div
+            className="intro-glow-pulse pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[80vw] h-[60vh] rounded-full z-0"
+            style={{
+              background: "radial-gradient(ellipse at center, rgba(255,255,255,0.08) 0%, transparent 70%)",
+            }}
+          />
+
+          {/* Skip intro — top right */}
+          <button
+            onClick={handleIntroEnd}
+            className="intro-fade-in absolute top-6 right-6 sm:top-8 sm:right-8 z-20 text-white/40 hover:text-white/90 transition-all duration-300 text-xs sm:text-sm tracking-widest uppercase px-4 py-2 border border-white/10 hover:border-white/30 hover:backdrop-blur-sm"
+            style={{ animationDelay: "1.8s", fontFamily: "var(--font-mono)" }}
+          >
+            Skip
+          </button>
+
+          {/* Content container */}
+          <div className="relative z-10 flex flex-col items-center w-full max-w-4xl">
+            {/* Ralph mascot + intro text */}
+            <div className="flex items-center gap-4 sm:gap-5 mb-6 sm:mb-8 intro-fade-up" style={{ animationDelay: "0.2s" }}>
+              <Image
+                src="/consultralph-transparent.png"
+                alt="ConsultRalph"
+                width={72}
+                height={72}
+                className="w-12 h-12 sm:w-14 sm:h-14 md:w-[72px] md:h-[72px] object-contain flex-shrink-0"
+              />
+              <div>
+                <p
+                  className="text-white/90 text-base sm:text-lg md:text-xl font-medium leading-snug tracking-tight"
+                  style={{ fontFamily: "var(--font-mono)" }}
                 >
-                  <svg className="w-5 h-5 md:w-6 md:h-6" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M8 5v14l11-7z" />
-                  </svg>
-                  Play with sound
-                </button>
-              </div>
-            )}
-            {introStarted && (
-              <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 text-center px-6 max-w-4xl">
-                <p className="text-white text-2xl md:text-4xl font-semibold mb-4 drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">
-                  Hello everyone! Do you need any help?
+                  Hey, I&apos;m Ralph. I consult for consultants.
                 </p>
-                <p className="text-white text-2xl md:text-4xl font-semibold mb-6 drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">
-                  Just consult Ralph.....
-                </p>
-                <p className="text-white/70 text-sm md:text-base italic drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">
-                  Powered by Valyu DeepResearch API
+                <p
+                  className="text-white/40 text-xs sm:text-sm mt-1 tracking-wide uppercase"
+                  style={{ fontFamily: "var(--font-mono)" }}
+                >
+                  Hit play to see what I can do
                 </p>
               </div>
-            )}
-            <button
-              onClick={handleIntroEnd}
-              className="absolute top-8 right-8 text-white/80 hover:text-white transition-colors text-sm md:text-base px-4 py-2 border border-white/30 rounded-lg hover:bg-white/10"
+            </div>
+
+            {/* Decorative line */}
+            <div className="w-full mb-5 sm:mb-6 overflow-hidden" style={{ animationDelay: "0.5s" }}>
+              <div className="intro-line-expand h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" style={{ animationDelay: "0.6s" }} />
+            </div>
+
+            {/* Video with cinematic frame */}
+            <div
+              className="intro-scale-in w-full relative group"
+              style={{ animationDelay: "0.4s" }}
             >
-              Skip intro
-            </button>
+              {/* Outer glow on hover */}
+              <div className="absolute -inset-px bg-gradient-to-b from-white/[0.08] to-transparent rounded-sm opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+              <div className="relative border border-white/[0.06] rounded-sm overflow-hidden bg-black">
+                <video
+                  ref={introVideoRef}
+                  src="/consultralph-demo.mp4"
+                  controls
+                  playsInline
+                  muted
+                  className="w-full h-auto block"
+                  onEnded={handleIntroEnd}
+                />
+              </div>
+            </div>
+
+            {/* Bottom decorative line */}
+            <div className="w-full mt-5 sm:mt-6 overflow-hidden">
+              <div className="intro-line-expand h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" style={{ animationDelay: "0.8s" }} />
+            </div>
+
+            {/* Bottom tagline */}
+            <p
+              className="intro-fade-in mt-4 text-white/20 text-[10px] sm:text-xs tracking-[0.25em] uppercase text-center"
+              style={{ animationDelay: "1.2s", fontFamily: "var(--font-mono)" }}
+            >
+              Powered by Valyu DeepResearch
+            </p>
           </div>
         </div>
       )}
