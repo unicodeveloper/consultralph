@@ -9,13 +9,6 @@ interface ThemeState {
   initialize: () => void;
 }
 
-function getSystemTheme(): Theme {
-  if (typeof window === "undefined") return "dark";
-  return window.matchMedia("(prefers-color-scheme: dark)").matches
-    ? "dark"
-    : "light";
-}
-
 function getStoredTheme(): Theme | null {
   if (typeof window === "undefined") return null;
   const stored = localStorage.getItem("theme");
