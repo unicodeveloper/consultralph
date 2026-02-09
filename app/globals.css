@@ -55,6 +55,8 @@
   --shadow-2xl: 0px 1px 0px 0px hsl(0 0% 0% / 0.00);
   --tracking-normal: 0em;
   --spacing: 0.25rem;
+  --view-btn-bg: #262626;
+  --view-btn-text: #ffffff;
 }
 
 .dark {
@@ -109,6 +111,12 @@
   --shadow-lg: 0px 1px 0px 0px hsl(0 0% 0% / 0.00), 0px 4px 6px -1px hsl(0 0% 0% / 0.00);
   --shadow-xl: 0px 1px 0px 0px hsl(0 0% 0% / 0.00), 0px 8px 10px -1px hsl(0 0% 0% / 0.00);
   --shadow-2xl: 0px 1px 0px 0px hsl(0 0% 0% / 0.00);
+  --view-btn-bg: rgba(255, 255, 255, 0.1);
+  --view-btn-text: #ffffff;
+}
+
+.view-btn:hover {
+  opacity: 0.85;
 }
 
 @theme inline {

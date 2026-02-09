@@ -20,6 +20,8 @@
 
 # production
 /build
+/fullreportscroll.mp4
+/stacker.mp4
 
 # misc
 .DS_Store

@@ -248,10 +248,11 @@ export default function ResearchResults({ result, onCancel, onReset }: ResearchR
                             </div>
                           </div>
                         </div>
-                        <div className="flex gap-2">
+                        <div className="flex gap-2" style={{ display: "flex" }}>
                           <button
                             onClick={() => handleView(deliverable.url, deliverable.type, getFileLabel(deliverable.type))}
-                            className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 bg-neutral-800 hover:bg-neutral-700 text-white dark:bg-white/10 dark:hover:bg-white/20 dark:text-white rounded-lg transition-all text-sm font-medium min-h-[44px]"
+                            className="view-btn flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg transition-all text-sm font-medium min-h-[44px]"
+                            style={{ flex: "1 1 0%", minWidth: 0, backgroundColor: "var(--view-btn-bg, #262626)", color: "var(--view-btn-text, #fff)" }}
                           >
                             <Eye className="w-4 h-4" />
                             View
@@ -260,6 +261,7 @@ export default function ResearchResults({ result, onCancel, onReset }: ResearchR
                             onClick={() => handleDownload(deliverable.url, filename)}
                             disabled={isDownloading === filename}
                             className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 bg-surface-hover hover:bg-border rounded-lg transition-all text-sm font-medium min-h-[44px]"
+                            style={{ flex: "1 1 0%", minWidth: 0 }}
                           >
                             {isDownloading === filename ? (
                               <Loader2 className="w-4 h-4 animate-spin" />
