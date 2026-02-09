@@ -462,7 +462,7 @@ function HomeContent() {
               <div className="relative border border-white/[0.06] rounded-sm overflow-hidden bg-black">
                 <video
                   ref={introVideoRef}
-                  src="/consultralph-demo.mp4"
+                  src="https://unicodeveloper.b-cdn.net/consultralph-demo.mp4"
                   controls
                   playsInline
                   muted
