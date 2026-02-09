@@ -251,4 +251,4 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 Built with ❤️ for consultants who value their time.
 
-**[Join our Discord](https://discord.gg/8TCbHsSe)** for updates and support.
+**[Join our Discord](https://discord.com/invite/BhUWrFbHRa)** for updates and support.
