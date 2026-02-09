@@ -4,7 +4,7 @@
 
 **Consult Ralph** is an autonomous deep research AI agent for consultants. It generates comprehensive due diligence reports, market analyses, competitive landscapes, and strategic insights in minutes. It can also run multiple research tasks simultaneously, like a swarm of agents completing in minutes what would normally take days or weeks or months.
 
-Built for consultants at any top firms: EY, Deloitte, PwC, KPMG, McKinsey, BCG, Bain, investment banks etc. 
+Built for consultants at any top firms: EY, Deloitte, PwC, KPMG, McKinsey, BCG, Bain, investment banks etc.
 
 ## What It Does
 
@@ -13,6 +13,7 @@ This tool transforms hours of manual research into minutes of automated intellig
 - **📄 Comprehensive PDF Report** - Detailed analysis with executive summary, findings, and recommendations
 - **📊 Data Spreadsheet (CSV)** - Structured data, competitor comparisons, and key metrics
 - **📝 Executive Summary (DOCX)** - One-page briefing document for leadership presentations
+- **🎯 PowerPoint Deck (PPTX)** - Presentation-ready slides for client meetings
 - **🔗 Cited Sources** - All findings backed by verifiable sources
 
 ## Research Types
@@ -29,9 +30,38 @@ This tool transforms hours of manual research into minutes of automated intellig
 
 - **Deep AI Research** - Leverages [Valyu's Deep Research API](https://docs.valyu.ai/api-reference/endpoint/deepresearch-create) to search across thousands of sources
 - **Real-time Progress** - Visual indicators showing research stages and completion
-- **Professional Deliverables** - Consulting-quality PDF reports, spreadsheets, and summaries
+- **Professional Deliverables** - Consulting-quality PDF reports, spreadsheets, presentations, and summaries
 - **Multiple Research Types** - Company, market, competitive, industry, or custom research
 - **Advanced Options** - Add client context, specific questions, and research focus areas
+- **Dark Mode by Default** - Sleek dark UI with light mode toggle available
+
+## App Modes
+
+ConsultRalph supports two deployment modes controlled by the `NEXT_PUBLIC_APP_MODE` environment variable:
+
+### Self-Hosted Mode (Default)
+
+```env
+NEXT_PUBLIC_APP_MODE=self-hosted
+```
+
+- **No user authentication required** — anyone with access to the app can run research
+- Uses a single **server-side Valyu API key** (`VALYU_API_KEY`) for all requests
+- All research costs are billed to the API key owner
+- Ideal for internal team deployments, personal use, or private instances
+- Only requires `VALYU_API_KEY` to be set
+
+### Valyu Mode
+
+```env
+NEXT_PUBLIC_APP_MODE=valyu
+```
+
+- **Requires user authentication** via OAuth 2.0 with PKCE (Valyu as identity provider)
+- Each user signs in with their Valyu account and uses their own credits
+- Research costs are billed to the individual user's Valyu account
+- Ideal for public-facing deployments like [consultralph.com](https://consultralph.com)
+- Requires OAuth configuration: `NEXT_PUBLIC_VALYU_CLIENT_ID`, `VALYU_CLIENT_SECRET`, `NEXT_PUBLIC_VALYU_AUTH_URL`, `VALYU_APP_URL`, and `NEXT_PUBLIC_REDIRECT_URI`
 
 ## Tech Stack
 
@@ -41,6 +71,8 @@ This tool transforms hours of manual research into minutes of automated intellig
 | Language | TypeScript |
 | Styling | Tailwind CSS 4 |
 | AI Research | [Valyu Deep Research API](https://valyu.ai) |
+| Auth | OAuth 2.0 with PKCE (Valyu mode) |
+| State | Zustand |
 | Markdown | react-markdown with GFM |
 | Icons | Lucide React |
 
@@ -70,9 +102,22 @@ This tool transforms hours of manual research into minutes of automated intellig
    cp .env.example .env
    ```
 
-4. **Add your Valyu API key**
+4. **Configure your mode**
+
+   **For self-hosted mode** (simplest setup):
    ```env
+   NEXT_PUBLIC_APP_MODE=self-hosted
    VALYU_API_KEY=your_valyu_api_key_here
+   ```
+
+   **For Valyu mode** (with user authentication):
+   ```env
+   NEXT_PUBLIC_APP_MODE=valyu
+   NEXT_PUBLIC_VALYU_CLIENT_ID=your_client_id_here
+   VALYU_CLIENT_SECRET=your_client_secret_here
+   NEXT_PUBLIC_VALYU_AUTH_URL=https://auth.valyu.ai
+   VALYU_APP_URL=https://platform.valyu.ai
+   NEXT_PUBLIC_REDIRECT_URI=http://localhost:3000/auth/valyu/callback
    ```
 
 5. **Run the development server**
@@ -119,7 +164,8 @@ Expand "Advanced Options" to add:
 
 1. Click the button above
 2. Add your `VALYU_API_KEY` environment variable
-3. Deploy
+3. Set `NEXT_PUBLIC_APP_MODE=self-hosted` (or `valyu` with OAuth config)
+4. Deploy
 
 ### Vercel
 
@@ -127,6 +173,8 @@ Expand "Advanced Options" to add:
 npm i -g vercel
 vercel
 ```
+
+Add environment variables in the Vercel dashboard.
 
 ### Docker
 
@@ -143,23 +191,36 @@ CMD ["npm", "start"]
 ## Project Structure
 
 ```
-consulting-research/
+consultralph/
 ├── app/
 │   ├── api/
-│   │   └── /    # Research API routes
-│   │       ├── route.ts            # Create research task
-│   │       ├── status/route.ts     # Get task status
-│   │       └── cancel/route.ts     # Cancel task
+│   │   └── consulting-research/
+│   │       ├── route.ts              # Create research task
+│   │       ├── status/route.ts       # Get task status
+│   │       ├── public-status/route.ts # Public report access
+│   │       └── cancel/route.ts       # Cancel task
 │   ├── components/
-│   │   ├── ConsultingResearchForm.tsx  # Main research form
-│   │   ├── ResearchResults.tsx         # Results display
-│   │   ├── Sidebar.tsx                 # Navigation sidebar
-│   │   └── GitHubCorner.tsx            # GitHub link
-│   ├── globals.css                 # Global styles
-│   ├── layout.tsx                  # Root layout
-│   └── page.tsx                    # Main page
-├── public/                         # Static assets
-├── .env.example                    # Environment template
+│   │   ├── ConsultingResearchForm.tsx # Main research form
+│   │   ├── ResearchResults.tsx        # Results display
+│   │   ├── ResearchActivityFeed.tsx   # Live activity feed
+│   │   ├── Sidebar.tsx                # Navigation sidebar
+│   │   ├── ExampleReports.tsx         # Example report cards
+│   │   ├── GitHubCorner.tsx           # GitHub link
+│   │   └── auth/                      # OAuth components
+│   │       ├── sign-in-modal.tsx
+│   │       ├── sign-in-panel.tsx
+│   │       └── auth-initializer.tsx
+│   ├── lib/
+│   │   ├── app-mode.ts               # Self-hosted vs Valyu mode helpers
+│   │   └── researchHistory.ts        # Local research history
+│   ├── stores/
+│   │   ├── auth-store.ts             # Auth state (Zustand)
+│   │   └── theme-store.ts            # Theme state (Zustand)
+│   ├── globals.css                    # Global styles & theme variables
+│   ├── layout.tsx                     # Root layout
+│   └── page.tsx                       # Main page
+├── public/                            # Static assets
+├── .env.example                       # Environment template
 ├── package.json
 ├── tsconfig.json
 └── README.md
