@@ -10,7 +10,7 @@ interface ThemeState {
 }
 
 function getSystemTheme(): Theme {
-  if (typeof window === "undefined") return "light";
+  if (typeof window === "undefined") return "dark";
   return window.matchMedia("(prefers-color-scheme: dark)").matches
     ? "dark"
     : "light";
@@ -39,11 +39,11 @@ function applyTheme(theme: Theme) {
 }
 
 export const useThemeStore = create<ThemeState>((set, get) => ({
-  theme: "light",
+  theme: "dark",
 
   initialize: () => {
     const stored = getStoredTheme();
-    const theme = stored || getSystemTheme();
+    const theme = stored || "dark";
     applyTheme(theme);
     set({ theme });
   },
