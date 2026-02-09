@@ -414,10 +414,10 @@ function HomeContent() {
           {/* Skip intro — top right */}
           <button
             onClick={handleIntroEnd}
-            className="intro-fade-in absolute top-6 right-6 sm:top-8 sm:right-8 z-20 text-white/40 hover:text-white/90 transition-all duration-300 text-xs sm:text-sm tracking-widest uppercase px-4 py-2 border border-white/10 hover:border-white/30 hover:backdrop-blur-sm"
+            className="intro-fade-in absolute top-6 right-6 sm:top-8 sm:right-8 z-20 text-white hover:text-white transition-all duration-300 text-sm sm:text-base tracking-widest uppercase px-6 py-3 border border-white/40 hover:border-white/70 hover:backdrop-blur-sm rounded-md"
             style={{ animationDelay: "1.8s", fontFamily: "var(--font-mono)" }}
           >
-            Skip
+            Skip &gt;&gt;&gt;
           </button>
 
           {/* Content container */}
