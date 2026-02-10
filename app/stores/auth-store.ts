@@ -31,6 +31,7 @@ interface AuthState {
   signOut: () => void;
   initialize: () => void;
   getAccessToken: () => string | null;
+  refreshAccessToken: () => Promise<string | null>;
   openSignInModal: () => void;
   closeSignInModal: () => void;
 }
@@ -83,16 +84,23 @@ function isTokenExpired(expiresAt: number): boolean {
 }
 
 // Load initial tokens from localStorage
-function loadInitialTokens(): { user: User | null; tokens: TokenData | null } {
+// Returns tokens even if expired, as long as refresh token exists (will be refreshed)
+function loadInitialTokens(): { user: User | null; tokens: TokenData | null; needsRefresh: boolean } {
   if (typeof window === "undefined") {
-    return { user: null, tokens: null };
+    return { user: null, tokens: null, needsRefresh: false };
   }
   const user = loadUser();
   const tokens = loadTokens();
-  if (user && tokens && !isTokenExpired(tokens.expiresAt)) {
-    return { user, tokens };
+  if (user && tokens) {
+    if (!isTokenExpired(tokens.expiresAt)) {
+      return { user, tokens, needsRefresh: false };
+    }
+    // Token expired but refresh token available - keep the session alive
+    if (tokens.refreshToken) {
+      return { user, tokens, needsRefresh: true };
+    }
   }
-  return { user: null, tokens: null };
+  return { user: null, tokens: null, needsRefresh: false };
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -123,7 +131,7 @@ export const useAuthStore = create<AuthState>()(
         set({ initialized: true });
 
         // Load tokens from localStorage
-        const { user, tokens } = loadInitialTokens();
+        const { user, tokens, needsRefresh } = loadInitialTokens();
         if (user && tokens) {
           set({
             user,
@@ -133,6 +141,10 @@ export const useAuthStore = create<AuthState>()(
             isAuthenticated: true,
             isLoading: false,
           });
+          // Auto-refresh expired token in background
+          if (needsRefresh) {
+            get().refreshAccessToken();
+          }
           return;
         }
 
@@ -219,6 +231,46 @@ export const useAuthStore = create<AuthState>()(
         }
 
         return null;
+      },
+
+      refreshAccessToken: async () => {
+        const state = get();
+        const refreshToken = state.refreshToken || loadTokens()?.refreshToken;
+        if (!refreshToken) {
+          // No refresh token - sign out so user sees sign-in prompt
+          get().signOut();
+          return null;
+        }
+
+        try {
+          const response = await fetch("/api/oauth/refresh", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ refreshToken }),
+          });
+
+          if (!response.ok) {
+            // Refresh failed - sign out so user sees sign-in prompt
+            get().signOut();
+            return null;
+          }
+
+          const { access_token, refresh_token, expires_in } = await response.json();
+          const expiresAt = Date.now() + (expires_in || 3600) * 1000;
+
+          saveTokens({ accessToken: access_token, refreshToken: refresh_token, expiresAt });
+
+          set({
+            accessToken: access_token,
+            refreshToken: refresh_token || refreshToken,
+            tokenExpiresAt: expiresAt,
+          });
+
+          return access_token;
+        } catch (error) {
+          console.error("Token refresh error:", error);
+          return null;
+        }
       },
 
       openSignInModal: () => {
