@@ -15,7 +15,7 @@ const getValyuApiKey = () => {
 async function listViaProxy(
   accessToken: string,
   limit: number
-): Promise<{ success: boolean; data?: unknown[]; error?: string }> {
+): Promise<{ success: boolean; data?: unknown[]; error?: string; status?: number }> {
   const proxyUrl = `${VALYU_APP_URL}/api/oauth/proxy`;
 
   const response = await fetch(proxyUrl, {
@@ -32,9 +32,9 @@ async function listViaProxy(
 
   if (!response.ok) {
     if (response.status === 401 || response.status === 403) {
-      return { success: false, error: "Session expired. Please sign in again." };
+      return { success: false, error: "Session expired. Please sign in again.", status: 401 };
     }
-    return { success: false, error: `API call failed: ${response.status}` };
+    return { success: false, error: `API call failed: ${response.status}`, status: response.status };
   }
 
   return response.json();
@@ -55,12 +55,17 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    let listData: { success?: boolean; data?: unknown[]; error?: string };
+    let listData: { success?: boolean; data?: unknown[]; error?: string; status?: number };
 
     if (!selfHosted && accessToken) {
       listData = await listViaProxy(accessToken, limit);
       if (listData.error) {
-        return NextResponse.json({ error: listData.error }, { status: 500 });
+        const status = listData.status === 401 ? 401 : 500;
+        const body: Record<string, unknown> = { error: listData.error };
+        if (status === 401) {
+          body.requiresReauth = true;
+        }
+        return NextResponse.json(body, { status });
       }
     } else {
       const apiKeyId = process.env.VALYU_API_KEY_ID;

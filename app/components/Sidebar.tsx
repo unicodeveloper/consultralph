@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -76,6 +76,19 @@ export default function Sidebar({
   const isValyuMode = APP_MODE === "valyu";
   const canViewHistory = !isValyuMode || isAuthenticated;
 
+  // Helper function to map API tasks to ResearchHistoryItem format
+  const mapTasks = useCallback(
+    (tasks: { deepresearch_id: string; query: string; status: string; created_at: number }[]): ResearchHistoryItem[] =>
+      tasks.map((task) => ({
+        id: task.deepresearch_id,
+        title: task.query,
+        researchType: "custom",
+        createdAt: task.created_at ? task.created_at * 1000 : Date.now(),
+        status: task.status as ResearchHistoryItem["status"],
+      })),
+    []
+  );
+
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -111,45 +124,56 @@ export default function Sidebar({
   useEffect(() => {
     if (!canViewHistory) return;
 
-    const fetchHistory = async () => {
+    const fetchListWithToken = async (token: string) => {
+      const url = `/api/consulting-research/list?accessToken=${encodeURIComponent(token)}`;
+      return fetch(url);
+    };
+
+    async function fetchHistory() {
       try {
-        const { getAccessToken } = useAuthStore.getState();
-        const accessToken = getAccessToken();
-        const url = accessToken
-          ? `/api/consulting-research/list?accessToken=${encodeURIComponent(accessToken)}`
-          : `/api/consulting-research/list`;
-        const response = await fetch(url);
-        if (!response.ok) throw new Error("List API " + response.status);
+        const { getAccessToken, refreshAccessToken } = useAuthStore.getState();
+        const accessToken = getAccessToken() || await refreshAccessToken();
+
+        if (!accessToken) {
+          throw new Error("No access token");
+        }
+
+        let response = await fetchListWithToken(accessToken);
+
+        // On 401, attempt one token refresh and retry
+        if (response.status === 401) {
+          const newToken = await refreshAccessToken();
+          if (newToken) {
+            response = await fetchListWithToken(newToken);
+          }
+        }
+
+        if (!response.ok) {
+          throw new Error(`List API ${response.status}`);
+        }
+
         const data = await response.json();
-        if (data.tasks && data.tasks.length > 0) {
-          const mapped: ResearchHistoryItem[] = data.tasks.map(
-            (task: { deepresearch_id: string; query: string; status: string; created_at: number }) => ({
-              id: task.deepresearch_id,
-              title: task.query,
-              researchType: "custom",
-              createdAt: task.created_at ? task.created_at * 1000 : Date.now(),
-              status: task.status as ResearchHistoryItem["status"],
-            })
-          );
-          setHistory(mapped);
+        if (data.tasks?.length > 0) {
+          setHistory(mapTasks(data.tasks));
           return;
         }
       } catch {
         // API unavailable - fall through to localStorage
       }
+
       // Fall back to localStorage if API fails or returns empty
       const localHistory = getResearchHistory();
       if (localHistory.length > 0) {
         setHistory(localHistory);
       }
-    };
+    }
 
     fetchHistory();
 
     // Refresh history periodically
     const interval = setInterval(fetchHistory, 30000);
     return () => clearInterval(interval);
-  }, [canViewHistory]);
+  }, [canViewHistory, mapTasks]);
 
   const handleRemoveItem = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
