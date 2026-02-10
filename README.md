@@ -6,6 +6,8 @@
 
 Built for consultants at any top firms: EY, Deloitte, PwC, KPMG, McKinsey, BCG, Bain, investment banks etc.
 
+CA: https://bags.fm/3CNE6yeTiEkGiaHpQ4XxhZks1KJeqTsFePPith3VBAGS
+
 ## What It Does
 
 This tool transforms hours of manual research into minutes of automated intelligence gathering. Input your research topic, and receive:
