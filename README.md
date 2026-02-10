@@ -160,7 +160,7 @@ Expand "Advanced Options" to add:
 
 ### Railway (Recommended)
 
-[![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/template)
+[![Deploy on Railway](https://railway.app/button.svg)](https://railway.com/deploy/passionate-abundance)
 
 1. Click the button above
 2. Add your `VALYU_API_KEY` environment variable
