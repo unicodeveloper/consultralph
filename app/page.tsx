@@ -217,18 +217,38 @@ function HomeContent() {
       task_id: initialResearchId,
     });
 
-    const accessToken = getAccessToken();
+    // For shared links, try public access first — avoids session-expired errors
+    // when the viewer has a stale token or isn't the report owner.
+    const loadFromUrl = async () => {
+      try {
+        const res = await fetch(`/api/consulting-research/public-status?taskId=${initialResearchId}`);
+        if (res.ok && activeTaskRef.current === initialResearchId) {
+          const data = await res.json();
+          setResearchResult(data);
+          if (data.output) {
+            const firstLine = data.output.split("\n").find((l: string) => l.trim());
+            if (firstLine) {
+              setCurrentResearchTitle(firstLine.replace(/^#+\s*/, "").slice(0, 60));
+            }
+          }
+          const isRunning = data.status === "queued" || data.status === "running";
+          setIsResearching(isRunning);
+          if (isRunning) {
+            pollIntervalRef.current = setInterval(() => pollPublicStatus(initialResearchId), 10000);
+          }
+          return; // public access succeeded
+        }
+      } catch { /* public access failed — fall through */ }
 
-    if (accessToken) {
-      // Authenticated user: use normal polling
-      pollStatus(initialResearchId);
-      pollIntervalRef.current = setInterval(() => {
+      // Fall back to authenticated polling (report is private or public endpoint errored)
+      const accessToken = getAccessToken();
+      if (accessToken) {
         pollStatus(initialResearchId);
-      }, 10000);
-    } else {
-      // Unauthenticated user: try public access for shared links
-      pollPublicStatus(initialResearchId);
-    }
+        pollIntervalRef.current = setInterval(() => pollStatus(initialResearchId), 10000);
+      }
+    };
+
+    loadFromUrl();
   }, [initialResearchId, pollStatus, pollPublicStatus, getAccessToken]);
 
   const handleSelectExample = useCallback(
