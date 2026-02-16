@@ -46,7 +46,7 @@ interface SidebarProps {
 
 const bottomItems = [
   { icon: BookOpen, label: "Documentation", href: "https://docs.valyu.ai/guides/deepresearch-quickstart" },
-  { icon: HelpCircle, label: "Join our Discord", href: "https://discord.com/invite/BhUWrFbHRa" },
+  { icon: HelpCircle, label: "Join our Discord", href: "https://discord.gg/cY4RhVcwZU" },
 ];
 
 export default function Sidebar({

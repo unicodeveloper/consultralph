@@ -312,4 +312,4 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 Built with ❤️ for consultants who value their time.
 
-**[Join our Discord](https://discord.com/invite/BhUWrFbHRa)** for updates and support.
+**[Join our Discord](https://discord.gg/cY4RhVcwZU)** for updates and support.

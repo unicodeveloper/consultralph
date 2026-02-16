@@ -13,6 +13,7 @@ import { X } from "lucide-react";
 import { DottedGlowBackground } from "@/components/ui/dotted-glow-background";
 import { ResearchHistoryItem, saveToHistory, updateHistoryStatus } from "./lib/researchHistory";
 import { useAuthStore } from "./stores/auth-store";
+import { requestNotificationPermission, sendCompletionNotification } from "./lib/notifications";
 
 interface ResearchResult {
   status: string;
@@ -70,6 +71,7 @@ function HomeContent() {
   const introVideoRef = useRef<HTMLVideoElement>(null);
   const initialLoadRef = useRef(false);
   const getAccessToken = useAuthStore((state) => state.getAccessToken);
+  const user = useAuthStore((state) => state.user);
   const showSignInModal = useAuthStore((state) => state.showSignInModal);
   const openSignInModal = useAuthStore((state) => state.openSignInModal);
   const closeSignInModal = useAuthStore((state) => state.closeSignInModal);
@@ -121,6 +123,9 @@ function HomeContent() {
           data.status === "failed" ||
           data.status === "cancelled"
         ) {
+          if (data.status === "completed") {
+            sendCompletionNotification(currentResearchTitle || "Your research");
+          }
           clearPolling();
           setIsResearching(false);
           updateHistoryStatus(taskId, data.status);
@@ -131,27 +136,6 @@ function HomeContent() {
     },
     [clearPolling, getAccessToken, currentResearchTitle]
   );
-
-  // Load research from URL param on initial mount
-  useEffect(() => {
-    if (initialLoadRef.current || !initialResearchId) return;
-    initialLoadRef.current = true;
-
-    activeTaskRef.current = initialResearchId;
-    setCurrentTaskId(initialResearchId);
-    setResearchResult({
-      status: "queued",
-      task_id: initialResearchId,
-    });
-
-    // Fetch current status
-    pollStatus(initialResearchId);
-
-    // Start polling in case it's still running
-    pollIntervalRef.current = setInterval(() => {
-      pollStatus(initialResearchId);
-    }, 10000);
-  }, [initialResearchId, pollStatus]);
 
   const handleTaskCreated = useCallback(
     (taskId: string, title: string, researchType: string) => {
@@ -165,6 +149,9 @@ function HomeContent() {
         status: "queued",
         task_id: taskId,
       });
+
+      // Request notification permission when user starts research
+      requestNotificationPermission();
 
       // Update URL with research ID
       setResearchParam(taskId);
@@ -217,6 +204,32 @@ function HomeContent() {
     },
     [currentResearchTitle, clearPolling]
   );
+
+  // Load research from URL param on initial mount
+  useEffect(() => {
+    if (initialLoadRef.current || !initialResearchId) return;
+    initialLoadRef.current = true;
+
+    activeTaskRef.current = initialResearchId;
+    setCurrentTaskId(initialResearchId);
+    setResearchResult({
+      status: "queued",
+      task_id: initialResearchId,
+    });
+
+    const accessToken = getAccessToken();
+
+    if (accessToken) {
+      // Authenticated user: use normal polling
+      pollStatus(initialResearchId);
+      pollIntervalRef.current = setInterval(() => {
+        pollStatus(initialResearchId);
+      }, 10000);
+    } else {
+      // Unauthenticated user: try public access for shared links
+      pollPublicStatus(initialResearchId);
+    }
+  }, [initialResearchId, pollStatus, pollPublicStatus, getAccessToken]);
 
   const handleSelectExample = useCallback(
     (taskId: string, title: string) => {
@@ -336,6 +349,61 @@ function HomeContent() {
     setResearchParam(null);
   };
 
+  const handleFollowUp = useCallback(
+    async (taskId: string, question: string) => {
+      const headers: HeadersInit = {
+        "Content-Type": "application/json",
+      };
+
+      const accessToken = getAccessToken();
+      if (accessToken) {
+        headers["Authorization"] = `Bearer ${accessToken}`;
+      }
+
+      const response = await fetch("/api/consulting-research/follow-up", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ taskId, instruction: question, alertEmail: user?.email }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to send follow-up");
+      }
+
+      const data = await response.json();
+      const newTaskId = data.deepresearch_id;
+
+      // New task created — switch to tracking it
+      const followUpTitle = `Follow-up: ${question.slice(0, 50)}`;
+      clearPolling();
+      activeTaskRef.current = newTaskId;
+      setCurrentTaskId(newTaskId);
+      setCurrentResearchTitle(followUpTitle);
+      setIsResearching(true);
+      cancelledRef.current = false;
+      setResearchResult({
+        status: "queued",
+        task_id: newTaskId,
+      });
+
+      setResearchParam(newTaskId);
+
+      saveToHistory({
+        id: newTaskId,
+        title: followUpTitle,
+        researchType: "custom",
+        status: "queued",
+      });
+
+      pollStatus(newTaskId);
+      pollIntervalRef.current = setInterval(() => {
+        pollStatus(newTaskId);
+      }, 10000);
+    },
+    [getAccessToken, clearPolling, pollStatus]
+  );
+
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -364,7 +432,7 @@ function HomeContent() {
   // Check if first visit + discord banner
   useEffect(() => {
     const hasSeenIntro = localStorage.getItem("consultralph_intro_seen");
-    if (!hasSeenIntro) {
+    if (!hasSeenIntro && !initialResearchId) {
       setShowIntro(true);
     }
     if (!localStorage.getItem("consultralph_discord_dismissed")) {
@@ -511,7 +579,7 @@ function HomeContent() {
           isSidebarCollapsed ? 'md:left-20' : 'md:left-80'
         }`}>
           <a
-            href="https://discord.com/invite/BhUWrFbHRa"
+            href="https://discord.gg/cY4RhVcwZU"
             target="_blank"
             rel="noopener noreferrer"
             className="text-sm text-foreground hover:text-primary transition-colors"
@@ -725,6 +793,8 @@ function HomeContent() {
                 result={researchResult}
                 onCancel={handleCancel}
                 onReset={handleReset}
+                onFollowUp={handleFollowUp}
+                currentTaskId={currentTaskId}
               />
             </div>
           )}

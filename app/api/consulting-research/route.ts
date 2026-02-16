@@ -37,7 +37,8 @@ async function createResearchWithOAuth(
   query: string,
   deliverables: Deliverable[],
   files?: FileAttachment[],
-  urls?: string[]
+  urls?: string[],
+  alertEmail?: string
 ) {
   const proxyUrl = `${VALYU_APP_URL}/api/oauth/proxy`;
 
@@ -58,6 +59,9 @@ async function createResearchWithOAuth(
   }
   if (urls && urls.length > 0) {
     taskBody.urls = urls;
+  }
+  if (alertEmail) {
+    taskBody.alert_email = alertEmail;
   }
 
   const requestBody = {
@@ -124,7 +128,8 @@ async function createResearchWithApiKey(
   query: string,
   deliverables: Deliverable[],
   files?: FileAttachment[],
-  urls?: string[]
+  urls?: string[],
+  alertEmail?: string
 ) {
   const valyu = new Valyu(getValyuApiKey());
 
@@ -139,6 +144,9 @@ async function createResearchWithApiKey(
   }
   if (urls && urls.length > 0) {
     options.urls = urls;
+  }
+  if (alertEmail) {
+    options.alertEmail = alertEmail;
   }
 
   return valyu.deepresearch.create(options);
@@ -160,6 +168,7 @@ export async function POST(request: NextRequest) {
       specificQuestions,
       files,
       urls,
+      alertEmail,
     } = await request.json() as {
       researchType: string;
       researchSubject: string;
@@ -168,6 +177,7 @@ export async function POST(request: NextRequest) {
       specificQuestions?: string;
       files?: FileAttachment[];
       urls?: string[];
+      alertEmail?: string;
     };
 
     if (!researchSubject) {
@@ -219,10 +229,10 @@ export async function POST(request: NextRequest) {
     // Route based on mode
     if (!selfHosted && accessToken) {
       // Valyu mode: use OAuth proxy (charges user's credits)
-      response = await createResearchWithOAuth(accessToken, query, deliverables, files, urls);
+      response = await createResearchWithOAuth(accessToken, query, deliverables, files, urls, alertEmail);
     } else {
       // Self-hosted mode: use server API key
-      response = await createResearchWithApiKey(query, deliverables, files, urls);
+      response = await createResearchWithApiKey(query, deliverables, files, urls, alertEmail);
     }
 
     return NextResponse.json({

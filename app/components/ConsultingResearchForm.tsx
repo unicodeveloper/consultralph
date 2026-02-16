@@ -158,6 +158,7 @@ export default function ConsultingResearchForm({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const getAccessToken = useAuthStore((state) => state.getAccessToken);
+  const user = useAuthStore((state) => state.user);
   const openSignInModal = useAuthStore((state) => state.openSignInModal);
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
 
@@ -342,6 +343,7 @@ export default function ConsultingResearchForm({
           specificQuestions: specificQuestions.trim(),
           files: filesPayload,
           urls: urlsPayload,
+          alertEmail: user?.email,
         }),
       });
 

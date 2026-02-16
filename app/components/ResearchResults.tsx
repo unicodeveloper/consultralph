@@ -14,7 +14,12 @@ import {
   Eye,
   Maximize2,
   X,
+  Share2,
+  Check,
+  Send,
+  CornerDownRight,
 } from "lucide-react";
+import { useAuthStore } from "@/app/stores/auth-store";
 import { FileIcon, defaultStyles } from "react-file-icon";
 import ResearchActivityFeed from "./ResearchActivityFeed";
 import MarkdownRenderer from "./MarkdownRenderer";
@@ -43,6 +48,8 @@ interface ResearchResultsProps {
   } | null;
   onCancel: () => void;
   onReset: () => void;
+  onFollowUp?: (taskId: string, question: string) => Promise<void>;
+  currentTaskId?: string | null;
 }
 
 const FILE_ICON_STYLES: Record<string, Record<string, unknown>> = {
@@ -80,7 +87,7 @@ function getFileLabel(format: string) {
   }
 }
 
-export default function ResearchResults({ result, onCancel, onReset }: ResearchResultsProps) {
+export default function ResearchResults({ result, onCancel, onReset, onFollowUp, currentTaskId }: ResearchResultsProps) {
   const [showReport, setShowReport] = useState(true);
 
   const [reportFullscreen, setReportFullscreen] = useState(false);
@@ -91,6 +98,67 @@ export default function ResearchResults({ result, onCancel, onReset }: ResearchR
     fileType: "",
     title: "",
   });
+
+  // Share state
+  const [isSharing, setIsSharing] = useState(false);
+  const [shareSuccess, setShareSuccess] = useState(false);
+  const getAccessToken = useAuthStore((state) => state.getAccessToken);
+
+  // Follow-up state
+  const [followUpQuestion, setFollowUpQuestion] = useState("");
+  const [isSubmittingFollowUp, setIsSubmittingFollowUp] = useState(false);
+  const [followUpError, setFollowUpError] = useState<string | null>(null);
+
+  const handleShare = async () => {
+    if (!result?.task_id) return;
+
+    setIsSharing(true);
+    try {
+      const headers: HeadersInit = {
+        "Content-Type": "application/json",
+      };
+
+      const accessToken = getAccessToken();
+      if (accessToken) {
+        headers["Authorization"] = `Bearer ${accessToken}`;
+      }
+
+      await fetch("/api/consulting-research/toggle-public", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ taskId: result.task_id, isPublic: true }),
+      });
+
+      const shareUrl = `${window.location.origin}/?research=${result.task_id}`;
+      await navigator.clipboard.writeText(shareUrl);
+
+      setShareSuccess(true);
+      setTimeout(() => setShareSuccess(false), 2000);
+    } catch (error) {
+      console.error("Error sharing report:", error);
+    } finally {
+      setIsSharing(false);
+    }
+  };
+
+  const handleFollowUpSubmit = async () => {
+    const taskId = currentTaskId || result?.task_id;
+    if (!followUpQuestion.trim() || !taskId || !onFollowUp) return;
+
+    setIsSubmittingFollowUp(true);
+    setFollowUpError(null);
+
+    try {
+      await onFollowUp(taskId, followUpQuestion.trim());
+      setFollowUpQuestion("");
+    } catch (error) {
+      setFollowUpError(
+        error instanceof Error ? error.message : "Failed to send follow-up"
+      );
+    } finally {
+      setIsSubmittingFollowUp(false);
+    }
+  };
 
   const reportContent = showReport && result?.output ? result.output : "";
 
@@ -353,11 +421,77 @@ export default function ResearchResults({ result, onCancel, onReset }: ResearchR
             </div>
           )}
 
+          {/* Follow-up Question */}
+          {onFollowUp && (
+            <div className="rounded-lg border border-border bg-surface p-4 space-y-3">
+              <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                <CornerDownRight className="w-4 h-4 text-primary" />
+                <span>Continue this research</span>
+              </div>
+              <textarea
+                value={followUpQuestion}
+                onChange={(e) => setFollowUpQuestion(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    handleFollowUpSubmit();
+                  }
+                }}
+                placeholder="e.g., Dig deeper into the competitive analysis, or Compare revenue models..."
+                className="input-field text-sm w-full resize-none min-h-[80px]"
+                rows={3}
+                disabled={isSubmittingFollowUp}
+              />
+              <div className="flex items-center justify-between">
+                <p className="text-xs text-text-muted">
+                  Creates a new research task using this report as context.
+                </p>
+                <button
+                  onClick={handleFollowUpSubmit}
+                  disabled={isSubmittingFollowUp || !followUpQuestion.trim()}
+                  className="flex items-center gap-2 px-4 py-2 text-sm bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-60 disabled:cursor-not-allowed shrink-0"
+                >
+                  {isSubmittingFollowUp ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Send className="w-4 h-4" />
+                  )}
+                  Send
+                </button>
+              </div>
+              {followUpError && (
+                <p className="text-xs text-error">{followUpError}</p>
+              )}
+            </div>
+          )}
+
           {/* Actions */}
-          <div className="flex gap-3 pt-2">
+          <div className="flex items-center gap-3 pt-2">
+            <button
+              onClick={handleShare}
+              disabled={isSharing || shareSuccess}
+              className="flex items-center gap-2 px-4 py-2 text-sm bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-60"
+            >
+              {shareSuccess ? (
+                <>
+                  <Check className="w-4 h-4" />
+                  Link copied!
+                </>
+              ) : isSharing ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Sharing...
+                </>
+              ) : (
+                <>
+                  <Share2 className="w-4 h-4" />
+                  Share Report
+                </>
+              )}
+            </button>
             <button
               onClick={onReset}
-              className="flex items-center gap-2 px-4 py-2 text-sm bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
+              className="flex items-center gap-2 px-4 py-2 text-sm border border-border rounded-lg hover:bg-surface-hover transition-colors text-text-muted"
             >
               <RefreshCw className="w-4 h-4" />
               New Research
