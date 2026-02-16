@@ -38,7 +38,7 @@ async function createResearchWithOAuth(
   deliverables: Deliverable[],
   files?: FileAttachment[],
   urls?: string[],
-  alertEmail?: string
+  alertEmail?: { email: string; custom_url: string }
 ) {
   const proxyUrl = `${VALYU_APP_URL}/api/oauth/proxy`;
 
@@ -129,7 +129,7 @@ async function createResearchWithApiKey(
   deliverables: Deliverable[],
   files?: FileAttachment[],
   urls?: string[],
-  alertEmail?: string
+  alertEmail?: { email: string; custom_url: string }
 ) {
   const valyu = new Valyu(getValyuApiKey());
 
@@ -213,6 +213,12 @@ export async function POST(request: NextRequest) {
     // Build deliverables based on research type
     const deliverables = buildDeliverables(researchType, researchSubject);
 
+    // Build alert_email object with report URL pointing back to this app
+    const appOrigin = new URL(request.url).origin;
+    const alertEmailObj = alertEmail
+      ? { email: alertEmail, custom_url: `${appOrigin}/?research={id}` }
+      : undefined;
+
     // Check mode first
     const selfHosted = isSelfHostedMode();
 
@@ -229,10 +235,10 @@ export async function POST(request: NextRequest) {
     // Route based on mode
     if (!selfHosted && accessToken) {
       // Valyu mode: use OAuth proxy (charges user's credits)
-      response = await createResearchWithOAuth(accessToken, query, deliverables, files, urls, alertEmail);
+      response = await createResearchWithOAuth(accessToken, query, deliverables, files, urls, alertEmailObj);
     } else {
       // Self-hosted mode: use server API key
-      response = await createResearchWithApiKey(query, deliverables, files, urls, alertEmail);
+      response = await createResearchWithApiKey(query, deliverables, files, urls, alertEmailObj);
     }
 
     return NextResponse.json({

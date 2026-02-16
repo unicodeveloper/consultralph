@@ -16,7 +16,7 @@ async function createFollowUpWithOAuth(
   accessToken: string,
   query: string,
   previousTaskId: string,
-  alertEmail?: string
+  alertEmail?: { email: string; custom_url: string }
 ) {
   const proxyUrl = `${VALYU_APP_URL}/api/oauth/proxy`;
 
@@ -72,7 +72,7 @@ async function createFollowUpWithOAuth(
 async function createFollowUpWithApiKey(
   query: string,
   previousTaskId: string,
-  alertEmail?: string
+  alertEmail?: { email: string; custom_url: string }
 ) {
   const valyu = new Valyu(getValyuApiKey());
 
@@ -112,6 +112,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Build alert_email object with report URL pointing back to this app
+    const appOrigin = new URL(request.url).origin;
+    const alertEmailObj = alertEmail
+      ? { email: alertEmail, custom_url: `${appOrigin}/?research={id}` }
+      : undefined;
+
     const selfHosted = isSelfHostedMode();
 
     if (!selfHosted && !accessToken) {
@@ -124,9 +130,9 @@ export async function POST(request: NextRequest) {
     let response;
 
     if (!selfHosted && accessToken) {
-      response = await createFollowUpWithOAuth(accessToken, instruction.trim(), taskId, alertEmail);
+      response = await createFollowUpWithOAuth(accessToken, instruction.trim(), taskId, alertEmailObj);
     } else {
-      response = await createFollowUpWithApiKey(instruction.trim(), taskId, alertEmail);
+      response = await createFollowUpWithApiKey(instruction.trim(), taskId, alertEmailObj);
     }
 
     return NextResponse.json({
