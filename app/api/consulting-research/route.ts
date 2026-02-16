@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { Valyu } from "valyu-js";
 import { isSelfHostedMode } from "@/app/lib/app-mode";
 
+/** Allow larger request bodies for file uploads (base64-encoded, up to ~200MB) */
+export const maxDuration = 60;
+
 const VALYU_APP_URL = process.env.VALYU_APP_URL || "https://platform.valyu.ai";
 
 const getValyuApiKey = () => {
@@ -19,13 +22,22 @@ interface Deliverable {
   description: string;
 }
 
+interface FileAttachment {
+  data: string;
+  filename: string;
+  mediaType: string;
+  context?: string;
+}
+
 /**
  * Create research using OAuth proxy (user's credits)
  */
 async function createResearchWithOAuth(
   accessToken: string,
   query: string,
-  deliverables: Deliverable[]
+  deliverables: Deliverable[],
+  files?: FileAttachment[],
+  urls?: string[]
 ) {
   const proxyUrl = `${VALYU_APP_URL}/api/oauth/proxy`;
 
@@ -34,21 +46,35 @@ async function createResearchWithOAuth(
   console.log("[OAuth] Token (first 20 chars):", accessToken.substring(0, 20) + "...");
   console.log("[OAuth] Token length:", accessToken.length);
 
+  const taskBody: Record<string, unknown> = {
+    query,
+    deliverables,
+    mode: "fast",
+    output_formats: ["markdown", "pdf"],
+  };
+
+  if (files && files.length > 0) {
+    taskBody.files = files;
+  }
+  if (urls && urls.length > 0) {
+    taskBody.urls = urls;
+  }
+
   const requestBody = {
     path: "/v1/deepresearch/tasks",
     method: "POST",
-    body: {
-      query,
-      deliverables,
-      mode: "fast",
-      output_formats: ["markdown", "pdf"],
-    },
+    body: taskBody,
   };
 
   console.log("[OAuth] Request body (without query):", {
     path: requestBody.path,
     method: requestBody.method,
-    body: { deliverables: requestBody.body.deliverables, mode: requestBody.body.mode },
+    body: {
+      deliverables: taskBody.deliverables,
+      mode: taskBody.mode,
+      filesCount: files?.length ?? 0,
+      urlsCount: urls?.length ?? 0,
+    },
   });
 
   const response = await fetch(proxyUrl, {
@@ -96,14 +122,26 @@ async function createResearchWithOAuth(
  */
 async function createResearchWithApiKey(
   query: string,
-  deliverables: Deliverable[]
+  deliverables: Deliverable[],
+  files?: FileAttachment[],
+  urls?: string[]
 ) {
   const valyu = new Valyu(getValyuApiKey());
-  return valyu.deepresearch.create({
+
+  const options: Record<string, unknown> = {
     query,
     deliverables,
     mode: "fast",
-  });
+  };
+
+  if (files && files.length > 0) {
+    options.files = files;
+  }
+  if (urls && urls.length > 0) {
+    options.urls = urls;
+  }
+
+  return valyu.deepresearch.create(options);
 }
 
 export async function POST(request: NextRequest) {
@@ -120,11 +158,35 @@ export async function POST(request: NextRequest) {
       researchFocus,
       clientContext,
       specificQuestions,
-    } = await request.json();
+      files,
+      urls,
+    } = await request.json() as {
+      researchType: string;
+      researchSubject: string;
+      researchFocus?: string;
+      clientContext?: string;
+      specificQuestions?: string;
+      files?: FileAttachment[];
+      urls?: string[];
+    };
 
     if (!researchSubject) {
       return NextResponse.json(
         { error: "Research subject is required" },
+        { status: 400 }
+      );
+    }
+
+    // Validate files and urls limits
+    if (files && files.length > 10) {
+      return NextResponse.json(
+        { error: "Maximum 10 files allowed" },
+        { status: 400 }
+      );
+    }
+    if (urls && urls.length > 10) {
+      return NextResponse.json(
+        { error: "Maximum 10 URLs allowed" },
         { status: 400 }
       );
     }
@@ -157,10 +219,10 @@ export async function POST(request: NextRequest) {
     // Route based on mode
     if (!selfHosted && accessToken) {
       // Valyu mode: use OAuth proxy (charges user's credits)
-      response = await createResearchWithOAuth(accessToken, query, deliverables);
+      response = await createResearchWithOAuth(accessToken, query, deliverables, files, urls);
     } else {
       // Self-hosted mode: use server API key
-      response = await createResearchWithApiKey(query, deliverables);
+      response = await createResearchWithApiKey(query, deliverables, files, urls);
     }
 
     return NextResponse.json({
