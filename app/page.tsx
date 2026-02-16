@@ -71,6 +71,7 @@ function HomeContent() {
   const introVideoRef = useRef<HTMLVideoElement>(null);
   const initialLoadRef = useRef(false);
   const getAccessToken = useAuthStore((state) => state.getAccessToken);
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const user = useAuthStore((state) => state.user);
   const showSignInModal = useAuthStore((state) => state.showSignInModal);
   const openSignInModal = useAuthStore((state) => state.openSignInModal);
@@ -813,7 +814,7 @@ function HomeContent() {
                 result={researchResult}
                 onCancel={handleCancel}
                 onReset={handleReset}
-                onFollowUp={handleFollowUp}
+                onFollowUp={isAuthenticated ? handleFollowUp : undefined}
                 currentTaskId={currentTaskId}
               />
             </div>

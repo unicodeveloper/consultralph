@@ -12,6 +12,34 @@ const getValyuApiKey = () => {
   return apiKey;
 };
 
+/**
+ * Extract a human-readable title from the full research query prompt.
+ * Matches patterns like:
+ *   "Conduct comprehensive due diligence research on {subject}."
+ *   "Conduct comprehensive market analysis research on the {subject} market."
+ *   "Conduct comprehensive competitive landscape analysis for the {subject} space."
+ *   "Conduct comprehensive industry overview research on the {subject} industry."
+ *   "Conduct comprehensive research on: {subject}"
+ */
+function extractTitleFromQuery(query: string): string {
+  const patterns: [RegExp, string][] = [
+    [/Conduct comprehensive due diligence research on (.+?)\./, "Company: "],
+    [/Conduct comprehensive market analysis research on the (.+?) market\./, "Market: "],
+    [/Conduct comprehensive competitive landscape analysis for the (.+?) space\./, "Competitive: "],
+    [/Conduct comprehensive industry overview research on the (.+?) industry\./, "Industry: "],
+    [/Conduct comprehensive research on:\s*(.+)/, ""],
+  ];
+
+  for (const [pattern, prefix] of patterns) {
+    const match = query.match(pattern);
+    if (match) return `${prefix}${match[1].trim()}`;
+  }
+
+  // Fallback: first line, truncated
+  const firstLine = query.trim().split("\n")[0];
+  return firstLine.length > 80 ? `${firstLine.slice(0, 80)}…` : firstLine;
+}
+
 async function listViaProxy(
   accessToken: string,
   limit: number
@@ -84,9 +112,16 @@ export async function GET(request: NextRequest) {
       tasks = Array.isArray(sdkResponse) ? sdkResponse as unknown[] : (data.data || []);
     }
 
+    const filteredTasks = (tasks as { query?: string }[])
+      .filter((task) => task.query?.includes("Conduct comprehensive"))
+      .map((task) => ({
+        ...task,
+        title: extractTitleFromQuery(task.query || ""),
+      }));
+
     return NextResponse.json({
       success: true,
-      tasks,
+      tasks: filteredTasks,
     });
   } catch (error) {
     console.error("Error listing research tasks:", error);

@@ -78,14 +78,23 @@ export default function Sidebar({
 
   // Helper function to map API tasks to ResearchHistoryItem format
   const mapTasks = useCallback(
-    (tasks: { deepresearch_id: string; query: string; status: string; created_at: number }[]): ResearchHistoryItem[] =>
-      tasks.map((task) => ({
-        id: task.deepresearch_id,
-        title: task.query,
-        researchType: "custom",
-        createdAt: task.created_at ? task.created_at * 1000 : Date.now(),
-        status: task.status as ResearchHistoryItem["status"],
-      })),
+    (tasks: { deepresearch_id: string; query: string; title?: string; status: string; created_at: string | number }[]): ResearchHistoryItem[] =>
+      tasks.map((task) => {
+        let createdAt = Date.now();
+        if (task.created_at) {
+          const parsed = typeof task.created_at === "string"
+            ? new Date(task.created_at).getTime()
+            : task.created_at * 1000;
+          if (!isNaN(parsed)) createdAt = parsed;
+        }
+        return {
+          id: task.deepresearch_id,
+          title: task.title || task.query,
+          researchType: "custom",
+          createdAt,
+          status: task.status as ResearchHistoryItem["status"],
+        };
+      }),
     []
   );
 
