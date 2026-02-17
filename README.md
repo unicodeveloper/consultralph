@@ -2,7 +2,7 @@
 
 ![Ralph](consultralph.png)
 
-**Consult Ralph** is an autonomous deep research AI agent for consultants. It generates comprehensive due diligence reports, market analyses, competitive landscapes, and strategic insights in minutes. It can also run multiple research tasks simultaneously, like a swarm of agents completing in minutes what would normally take days or weeks or months.
+**Consult Ralph** is an autonomous deep research AI agent for consultants and analysts. It generates comprehensive due diligence reports, market analyses, competitive landscapes, and strategic insights in minutes. It can also run multiple research tasks simultaneously, like a swarm of agents completing in minutes what would normally take days or weeks or months.
 
 Built for consultants at any top firms: EY, Deloitte, PwC, KPMG, McKinsey, BCG, Bain, investment banks etc.
 
