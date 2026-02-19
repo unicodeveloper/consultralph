@@ -13,7 +13,6 @@ const INSIDER_TRANSACTIONS = "valyu/valyu-insider-transactions-US";
 const STATISTICS = "valyu/valyu-statistics-US";
 const STOCKS = "valyu/valyu-stocks";
 const MARKET_MOVERS = "valyu/valyu-market-movers-US";
-const DIVIDENDS = "valyu/valyu-dividends-US";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -36,6 +35,7 @@ export const ALL_MNA_CATEGORIES: MnADataCategory[] = [
 
 export interface CategorySearchResult {
   category: MnADataCategory;
+  label: string;
   success: boolean;
   results: SearchResult[];
   totalCharacters: number;
@@ -54,6 +54,7 @@ export interface FinancialContext {
 // ---------------------------------------------------------------------------
 
 interface CategoryConfig {
+  label: string;
   datasets: string[];
   searchType: "proprietary" | "all";
   buildQuery: (companyName: string) => string;
@@ -61,34 +62,39 @@ interface CategoryConfig {
 
 const MNA_DATA_CATEGORIES: Record<MnADataCategory, CategoryConfig> = {
   sec_filings: {
+    label: "SEC Filings (10-K, 10-Q, 8-K)",
     datasets: [SEC_FILINGS],
     searchType: "proprietary",
     buildQuery: (company: string) =>
-      `${company} SEC filings 10-K 10-Q 8-K annual quarterly reports`,
+      `${company} SEC filings 10-K 10-Q 8-K risk factors MD&A business description financial statements`,
   },
   financial_statements: {
+    label: "Financial Statements & Ratios",
     datasets: [INCOME_STATEMENT, BALANCE_SHEET, CASH_FLOW, EARNINGS, STATISTICS],
     searchType: "proprietary",
     buildQuery: (company: string) =>
-      `${company} financial statements revenue EBITDA margins net income balance sheet cash flow`,
+      `${company} revenue EBITDA net income earnings balance sheet debt equity cash flow margins financial ratios`,
   },
   insider_activity: {
+    label: "Insider Activity & Market Signals",
     datasets: [INSIDER_TRANSACTIONS, STOCKS, MARKET_MOVERS],
     searchType: "proprietary",
     buildQuery: (company: string) =>
-      `${company} insider transactions Form 4 stock price valuation market activity`,
+      `${company} insider transactions executive trades Form 4 stock performance market cap valuation`,
   },
   patents: {
+    label: "Patent & IP Portfolio",
     datasets: [],
     searchType: "proprietary",
     buildQuery: (company: string) =>
       `${company} patents intellectual property IP portfolio technology filings`,
   },
   market_intelligence: {
+    label: "Market & Competitive Intelligence",
     datasets: [],
     searchType: "all",
     buildQuery: (company: string) =>
-      `${company} competitive landscape market position industry analysis competitors`,
+      `${company} competitive landscape market position industry analysis competitors recent news acquisitions`,
   },
 };
 
@@ -123,6 +129,7 @@ export async function searchCategory(
 
     return {
       category,
+      label: config.label,
       success: true,
       results,
       totalCharacters,
@@ -133,6 +140,7 @@ export async function searchCategory(
     console.error(`[valyu-search] ${category} search failed:`, message);
     return {
       category,
+      label: config.label,
       success: false,
       results: [],
       totalCharacters: 0,
@@ -181,7 +189,7 @@ export function flattenFinancialContext(ctx: FinancialContext): string {
   for (const catResult of ctx.results) {
     if (!catResult.success || catResult.results.length === 0) continue;
 
-    const heading = catResult.category.replace(/_/g, " ").toUpperCase();
+    const heading = catResult.label;
     const items = catResult.results.map((r) => {
       const content =
         typeof r.content === "string"
