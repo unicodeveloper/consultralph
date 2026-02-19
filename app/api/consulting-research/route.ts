@@ -156,7 +156,10 @@ async function createMnAResearchWithApiKey(
   dataCategories: MnADataCategory[],
   dealContext?: string,
   researchFocus?: string,
-  specificQuestions?: string
+  specificQuestions?: string,
+  files?: FileAttachment[],
+  urls?: string[],
+  alertEmail?: { email: string; custom_url: string }
 ) {
   const valyu = new Valyu(getValyuApiKey());
 
@@ -168,14 +171,20 @@ async function createMnAResearchWithApiKey(
   const deliverables = buildMnADeliverables(targetCompany);
   const searchConfig = buildMnASearchConfig(dataCategories);
 
-  return valyu.deepresearch.create({
+  const options: Record<string, unknown> = {
     query,
     deliverables,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any -- SDK types don't include "max" yet
     mode: mode as any,
     outputFormats: ["markdown", "pdf"],
     search: searchConfig,
-  });
+  };
+
+  if (files && files.length > 0) options.files = files;
+  if (urls && urls.length > 0) options.urls = urls;
+  if (alertEmail) options.alertEmail = alertEmail;
+
+  return valyu.deepresearch.create(options);
 }
 
 /**
@@ -190,7 +199,10 @@ async function createMnAResearchWithOAuth(
   dataCategories: MnADataCategory[],
   dealContext?: string,
   researchFocus?: string,
-  specificQuestions?: string
+  specificQuestions?: string,
+  files?: FileAttachment[],
+  urls?: string[],
+  alertEmail?: { email: string; custom_url: string }
 ) {
   // Phase 1: Gather financial data using server API key if available
   let financialContext;
@@ -215,16 +227,23 @@ async function createMnAResearchWithOAuth(
   const deliverables = buildMnADeliverables(targetCompany);
   const searchConfig = buildMnASearchConfig(dataCategories);
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- proxy body varies by research type
+  const body: Record<string, any> = {
+    query,
+    deliverables,
+    mode,
+    output_formats: ["markdown", "pdf"],
+    search: searchConfig,
+  };
+
+  if (files && files.length > 0) body.files = files;
+  if (urls && urls.length > 0) body.urls = urls;
+  if (alertEmail) body.alert_email = alertEmail;
+
   return callOAuthProxy(accessToken, {
     path: "/v1/deepresearch/tasks",
     method: "POST",
-    body: {
-      query,
-      deliverables,
-      mode,
-      output_formats: ["markdown", "pdf"],
-      search: searchConfig,
-    },
+    body,
   });
 }
 
@@ -329,7 +348,10 @@ export async function POST(request: NextRequest) {
           categories,
           dealContext,
           researchFocus,
-          specificQuestions
+          specificQuestions,
+          files,
+          urls,
+          alertEmailObj
         );
       } else {
         response = await createMnAResearchWithApiKey(
@@ -338,7 +360,10 @@ export async function POST(request: NextRequest) {
           categories,
           dealContext,
           researchFocus,
-          specificQuestions
+          specificQuestions,
+          files,
+          urls,
+          alertEmailObj
         );
       }
     } else {
