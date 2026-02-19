@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ConsultR Setup</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: #121212;
+      color: #e0e0e0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      -webkit-app-region: drag;
+      user-select: none;
+    }
+
+    .card {
+      background: #1e1e1e;
+      border-radius: 12px;
+      padding: 36px 32px;
+      width: 400px;
+      -webkit-app-region: no-drag;
+    }
+
+    .brand {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    .brand h1 {
+      font-size: 28px;
+      font-weight: 700;
+      color: #ffffff;
+      letter-spacing: -0.5px;
+    }
+
+    .brand h1 span {
+      color: #38bdf8;
+    }
+
+    .brand p {
+      color: #9e9e9e;
+      font-size: 14px;
+      margin-top: 8px;
+      line-height: 1.5;
+    }
+
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 500;
+      color: #b0b0b0;
+      margin-bottom: 6px;
+    }
+
+    .input-wrapper {
+      position: relative;
+      margin-bottom: 12px;
+    }
+
+    .input-wrapper input {
+      width: 100%;
+      padding: 10px 40px 10px 12px;
+      border: 1px solid #333;
+      border-radius: 8px;
+      background: #2a2a2a;
+      color: #e0e0e0;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .input-wrapper input:focus {
+      border-color: #38bdf8;
+    }
+
+    .toggle-visibility {
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      color: #9e9e9e;
+      cursor: pointer;
+      font-size: 18px;
+      padding: 2px;
+      line-height: 1;
+    }
+
+    .toggle-visibility:hover { color: #e0e0e0; }
+
+    .link-row {
+      text-align: right;
+      margin-bottom: 20px;
+    }
+
+    .link-row a {
+      color: #38bdf8;
+      font-size: 13px;
+      text-decoration: none;
+      cursor: pointer;
+    }
+
+    .link-row a:hover { text-decoration: underline; }
+
+    .btn {
+      width: 100%;
+      padding: 11px 0;
+      border: none;
+      border-radius: 8px;
+      background: #38bdf8;
+      color: #121212;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: opacity 0.15s;
+    }
+
+    .btn:hover { opacity: 0.9; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .spinner {
+      display: none;
+      width: 16px;
+      height: 16px;
+      border: 2px solid #12121266;
+      border-top-color: #121212;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .error {
+      display: none;
+      margin-top: 14px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      background: #2d1215;
+      border: 1px solid #5c2024;
+      color: #f87171;
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
+    .success {
+      display: none;
+      margin-top: 14px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      background: #122d1a;
+      border: 1px solid #1a5c2e;
+      color: #4ade80;
+      font-size: 13px;
+      text-align: center;
+      font-weight: 500;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="brand">
+      <h1>Consult<span>R</span></h1>
+      <p>Enter your Valyu API key to get started.<br />You only need to do this once.</p>
+    </div>
+
+    <label for="apiKey">API Key</label>
+    <div class="input-wrapper">
+      <input id="apiKey" type="password" placeholder="valyu-..." autocomplete="off" spellcheck="false" />
+      <button class="toggle-visibility" id="toggleBtn" type="button" title="Toggle visibility">&#128065;</button>
+    </div>
+
+    <div class="link-row">
+      <a id="getKeyLink" href="#">Get your API key &rarr;</a>
+    </div>
+
+    <button class="btn" id="submitBtn">
+      <span class="spinner" id="spinner"></span>
+      <span id="btnText">Validate &amp; Continue</span>
+    </button>
+
+    <div class="error" id="errorMsg"></div>
+    <div class="success" id="successMsg">Key validated. Starting ConsultR...</div>
+  </div>
+
+  <script>
+    const input = document.getElementById("apiKey");
+    const toggleBtn = document.getElementById("toggleBtn");
+    const submitBtn = document.getElementById("submitBtn");
+    const spinner = document.getElementById("spinner");
+    const btnText = document.getElementById("btnText");
+    const errorMsg = document.getElementById("errorMsg");
+    const successMsg = document.getElementById("successMsg");
+    const getKeyLink = document.getElementById("getKeyLink");
+
+    toggleBtn.addEventListener("click", () => {
+      const isPassword = input.type === "password";
+      input.type = isPassword ? "text" : "password";
+    });
+
+    getKeyLink.addEventListener("click", (e) => {
+      e.preventDefault();
+      window.setupBridge.openExternal("https://platform.valyu.ai");
+    });
+
+    async function submit() {
+      const key = input.value.trim();
+      if (!key) {
+        showError("Please enter your API key.");
+        return;
+      }
+
+      setLoading(true);
+      hideError();
+
+      try {
+        const result = await window.setupBridge.validateAndSaveKey(key);
+        if (result.valid) {
+          successMsg.style.display = "block";
+          submitBtn.disabled = true;
+          input.disabled = true;
+        } else {
+          setLoading(false);
+          showError(result.error || "Invalid API key. Please check and try again.");
+        }
+      } catch (err) {
+        setLoading(false);
+        showError("An unexpected error occurred. Please try again.");
+      }
+    }
+
+    function setLoading(loading) {
+      submitBtn.disabled = loading;
+      spinner.style.display = loading ? "inline-block" : "none";
+      btnText.textContent = loading ? "Validating..." : "Validate & Continue";
+    }
+
+    function showError(msg) {
+      errorMsg.textContent = msg;
+      errorMsg.style.display = "block";
+      successMsg.style.display = "none";
+    }
+
+    function hideError() {
+      errorMsg.style.display = "none";
+    }
+
+    submitBtn.addEventListener("click", submit);
+
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") submit();
+    });
+
+    input.focus();
+  </script>
+</body>
+</html>
