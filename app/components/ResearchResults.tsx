@@ -214,7 +214,7 @@ export default function ResearchResults({ result, onCancel, onReset }: ResearchR
                     : "bg-surface-hover text-text-muted border-border"
                 }`}
               >
-                {result.researchMode.charAt(0).toUpperCase() + result.researchMode.slice(1)} Mode
+                {result.researchMode.charAt(0).toUpperCase() + result.researchMode.slice(1)} Depth
               </span>
             )}
             {result.financialSummary && (

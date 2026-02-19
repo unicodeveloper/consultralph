@@ -100,7 +100,7 @@ const MNA_DATA_CATEGORIES = [
   { id: "market_intelligence", label: "Market & Competitive Intelligence" },
 ];
 
-const MNA_DEPTH_OPTIONS: {
+const DEPTH_OPTIONS: {
   id: ResearchMode;
   label: string;
   time: string;
@@ -174,6 +174,11 @@ export default function ConsultingResearchForm({
 
     if (!researchSubject.trim()) {
       setError("Please enter a research subject");
+      return;
+    }
+
+    if (researchType === "mna" && dataCategories.length === 0) {
+      setError("Please select at least one data category");
       return;
     }
 
@@ -383,49 +388,6 @@ export default function ConsultingResearchForm({
         </div>
       )}
 
-      {/* M&A Research Depth Selector */}
-      {researchType === "mna" && (
-        <div>
-          <label className="block text-sm sm:text-base font-medium mb-3">
-            Research Depth
-          </label>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3">
-            {MNA_DEPTH_OPTIONS.map((opt) => (
-              <button
-                key={opt.id}
-                type="button"
-                onClick={() => {
-                  setResearchMode(opt.id);
-                  setShowCostConfirm(false);
-                }}
-                disabled={isSubmitting || isResearching}
-                className={`p-3 sm:p-4 rounded-lg border text-left transition-all ${
-                  researchMode === opt.id
-                    ? opt.highlight
-                      ? "border-primary bg-primary/10 text-primary ring-2 ring-primary/30"
-                      : "border-primary bg-primary/5 text-primary"
-                    : opt.highlight
-                    ? "border-border hover:border-primary/50 hover:bg-surface bg-surface/50"
-                    : "border-border hover:border-primary/50 hover:bg-surface"
-                }`}
-              >
-                <span className="text-sm sm:text-base font-semibold block">
-                  {opt.label}
-                </span>
-                <span className="text-xs text-text-muted block mt-1">
-                  {opt.time} &middot; {opt.cost}
-                </span>
-              </button>
-            ))}
-          </div>
-          {researchMode === "max" && (
-            <p className="text-xs sm:text-sm text-text-muted mt-2">
-              Max mode runs an exhaustive multi-pass analysis with the deepest data coverage. Best for high-stakes deals.
-            </p>
-          )}
-        </div>
-      )}
-
       {/* M&A Deal Context */}
       {researchType === "mna" && (
         <div>
@@ -458,6 +420,47 @@ export default function ConsultingResearchForm({
           className="input-field resize-none h-20 sm:h-24 text-base"
           disabled={isSubmitting || isResearching}
         />
+      </div>
+
+      {/* Research Depth */}
+      <div>
+        <label className="block text-sm sm:text-base font-medium mb-3">
+          Research Depth
+        </label>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3">
+          {DEPTH_OPTIONS.map((opt) => (
+            <button
+              key={opt.id}
+              type="button"
+              onClick={() => {
+                setResearchMode(opt.id);
+                setShowCostConfirm(false);
+              }}
+              disabled={isSubmitting || isResearching}
+              className={`p-3 sm:p-4 rounded-lg border text-left transition-all ${
+                researchMode === opt.id
+                  ? opt.highlight
+                    ? "border-primary bg-primary/10 text-primary ring-2 ring-primary/30"
+                    : "border-primary bg-primary/5 text-primary"
+                  : opt.highlight
+                  ? "border-border hover:border-primary/50 hover:bg-surface bg-surface/50"
+                  : "border-border hover:border-primary/50 hover:bg-surface"
+              }`}
+            >
+              <span className="text-sm sm:text-base font-semibold block">
+                {opt.label}
+              </span>
+              <span className="text-xs text-text-muted block mt-1">
+                {opt.time} &middot; {opt.cost}
+              </span>
+            </button>
+          ))}
+        </div>
+        {researchMode === "max" && (
+          <p className="text-xs sm:text-sm text-text-muted mt-2">
+            Max mode runs an exhaustive multi-pass analysis with the deepest data coverage.
+          </p>
+        )}
       </div>
 
       {/* Advanced Options */}
@@ -507,29 +510,6 @@ export default function ConsultingResearchForm({
               />
             </div>
 
-            <div>
-              <label
-                htmlFor="researchMode"
-                className="block text-sm sm:text-base font-medium mb-2"
-              >
-                Research Mode
-              </label>
-              <select
-                id="researchMode"
-                value={researchMode}
-                onChange={(e) => setResearchMode(e.target.value as ResearchMode)}
-                className="input-field text-base"
-                disabled={isSubmitting || isResearching}
-              >
-                <option value="fast">Fast (~5 min)</option>
-                <option value="standard">Standard (10-20 min)</option>
-                <option value="heavy">Heavy (up to ~90 min)</option>
-                <option value="max">Max (up to ~180 min)</option>
-              </select>
-              <p className="text-xs sm:text-sm text-text-muted mt-2">
-                Choose fast for quick answers, standard for balanced depth, or heavy for complex analysis.
-              </p>
-            </div>
           </div>
         )}
       </div>

@@ -161,17 +161,30 @@ async function createMnAResearchWithOAuth(
 ) {
   // Phase 1: Gather financial data using server API key if available
   let financialContext;
-  try {
-    const valyu = new Valyu(getValyuApiKey());
-    financialContext = await gatherFinancialData(valyu, targetCompany, dataCategories);
-  } catch {
-    // Server API key not available — skip Phase 1, create empty context
+  const serverApiKey = process.env.VALYU_API_KEY;
+
+  if (!serverApiKey) {
+    console.warn("[OAuth M&A] No VALYU_API_KEY configured — skipping Phase 1 financial data gathering");
     financialContext = {
       results: [],
       totalCharacters: 0,
       categoriesSearched: 0,
       categoriesSucceeded: 0,
     };
+  } else {
+    try {
+      const valyu = new Valyu(serverApiKey);
+      financialContext = await gatherFinancialData(valyu, targetCompany, dataCategories);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error("[OAuth M&A] Phase 1 financial data gathering failed:", message);
+      financialContext = {
+        results: [],
+        totalCharacters: 0,
+        categoriesSearched: dataCategories.length,
+        categoriesSucceeded: 0,
+      };
+    }
   }
 
   // Phase 2: Build query, deliverables, and search config
@@ -209,7 +222,7 @@ async function createMnAResearchWithOAuth(
 
   if (!response.ok) {
     const errorText = await response.text();
-    console.log("[OAuth M&A] Error response body:", errorText);
+    console.error("[OAuth M&A] Error response body:", errorText);
 
     let errorData;
     try {
@@ -275,10 +288,20 @@ export async function POST(request: NextRequest) {
 
     if (researchType === "mna") {
       // M&A due-diligence pipeline
+      const validCategorySet = new Set<string>(ALL_MNA_CATEGORIES);
       const categories: MnADataCategory[] =
         Array.isArray(dataCategories) && dataCategories.length > 0
-          ? dataCategories
+          ? dataCategories.filter((c: unknown): c is MnADataCategory =>
+              typeof c === "string" && validCategorySet.has(c)
+            )
           : ALL_MNA_CATEGORIES;
+
+      if (categories.length === 0) {
+        return NextResponse.json(
+          { error: "No valid data categories selected" },
+          { status: 400 }
+        );
+      }
 
       if (!selfHosted && accessToken) {
         response = await createMnAResearchWithOAuth(
