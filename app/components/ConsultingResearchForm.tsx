@@ -7,6 +7,7 @@ import {
   TrendingUp,
   Users,
   FileText,
+  Scale,
   ChevronDown,
   ChevronUp,
   Loader2,
@@ -16,20 +17,28 @@ import { useAuthStore } from "@/app/stores/auth-store";
 const APP_MODE = process.env.NEXT_PUBLIC_APP_MODE || "self-hosted";
 
 interface ConsultingResearchFormProps {
-  onTaskCreated: (taskId: string, title: string, researchType: string) => void;
+  onTaskCreated: (taskId: string, title: string, researchType: string, mode?: string) => void;
   isResearching: boolean;
 }
 
 type ResearchType =
+  | "mna"
   | "company"
   | "market"
   | "competitive"
   | "industry"
   | "custom";
 
-type ResearchMode = "fast" | "standard" | "heavy";
+type ResearchMode = "fast" | "standard" | "heavy" | "max";
 
 const researchTypes = [
+  {
+    id: "mna" as ResearchType,
+    label: "M&A Due Diligence",
+    icon: Scale,
+    placeholder: "e.g., Nvidia, UnitedHealth Group, Stripe",
+    description: "Deep financial due diligence with SEC filings, financials, patents & insider data",
+  },
   {
     id: "company" as ResearchType,
     label: "Company Due Diligence",
@@ -68,6 +77,7 @@ const researchTypes = [
 ];
 
 const quickExamples = {
+  mna: ["Nvidia", "UnitedHealth Group", "Stripe", "SpaceX"],
   company: ["Tesla", "OpenAI", "Airbnb", "Stripe"],
   market: ["AI/ML Market", "EV Charging", "Digital Payments", "EdTech"],
   competitive: ["Streaming Services", "Cloud Providers", "Ride-sharing", "BNPL"],
@@ -79,7 +89,29 @@ const researchModeDurations: Record<ResearchMode, string> = {
   fast: "5-10 minutes",
   standard: "10-20 minutes",
   heavy: "up to 90 minutes",
+  max: "up to 180 minutes",
 };
+
+const MNA_DATA_CATEGORIES = [
+  { id: "sec_filings", label: "SEC Filings (10-K, 10-Q, 8-K)" },
+  { id: "financial_statements", label: "Financial Statements & Ratios" },
+  { id: "insider_activity", label: "Insider Activity & Market Signals" },
+  { id: "patents", label: "Patent & IP Portfolio" },
+  { id: "market_intelligence", label: "Market & Competitive Intelligence" },
+];
+
+const MNA_DEPTH_OPTIONS: {
+  id: ResearchMode;
+  label: string;
+  time: string;
+  cost: string;
+  highlight?: boolean;
+}[] = [
+  { id: "fast", label: "Fast", time: "~5 min", cost: "$0.10" },
+  { id: "standard", label: "Standard", time: "10-20 min", cost: "$0.50" },
+  { id: "heavy", label: "Heavy", time: "~90 min", cost: "$2.50" },
+  { id: "max", label: "Max", time: "~180 min", cost: "$15", highlight: true },
+];
 
 export default function ConsultingResearchForm({
   onTaskCreated,
@@ -92,6 +124,15 @@ export default function ConsultingResearchForm({
   const [clientContext, setClientContext] = useState("");
   const [specificQuestions, setSpecificQuestions] = useState("");
   const [researchMode, setResearchMode] = useState<ResearchMode>("fast");
+  const [dataCategories, setDataCategories] = useState<string[]>([
+    "sec_filings",
+    "financial_statements",
+    "insider_activity",
+    "patents",
+    "market_intelligence",
+  ]);
+  const [dealContext, setDealContext] = useState("");
+  const [showCostConfirm, setShowCostConfirm] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -114,9 +155,11 @@ export default function ConsultingResearchForm({
         setResearchFocus(data.researchFocus);
         setClientContext(data.clientContext);
         setSpecificQuestions(data.specificQuestions);
-        if (data.researchMode === "fast" || data.researchMode === "standard" || data.researchMode === "heavy") {
+        if (data.researchMode === "fast" || data.researchMode === "standard" || data.researchMode === "heavy" || data.researchMode === "max") {
           setResearchMode(data.researchMode);
         }
+        if (data.dataCategories) setDataCategories(data.dataCategories);
+        if (data.dealContext) setDealContext(data.dealContext);
         // Clear the saved data after restoring
         localStorage.removeItem("consultralph_pending_research");
       } catch (e) {
@@ -134,6 +177,13 @@ export default function ConsultingResearchForm({
       return;
     }
 
+    // Cost confirmation gate for max mode
+    if (researchMode === "max" && !showCostConfirm) {
+      setShowCostConfirm(true);
+      return;
+    }
+    setShowCostConfirm(false);
+
     // If in Valyu mode and not authenticated, save form data and open sign-in modal
     if (isValyuMode && !isAuthenticated) {
       // Save form data to localStorage
@@ -144,6 +194,10 @@ export default function ConsultingResearchForm({
         clientContext: clientContext.trim(),
         specificQuestions: specificQuestions.trim(),
         researchMode,
+        ...(researchType === "mna" && {
+          dataCategories,
+          dealContext: dealContext.trim(),
+        }),
       };
       localStorage.setItem("consultralph_pending_research", JSON.stringify(formData));
       openSignInModal();
@@ -174,6 +228,10 @@ export default function ConsultingResearchForm({
           clientContext: clientContext.trim(),
           specificQuestions: specificQuestions.trim(),
           researchMode,
+          ...(researchType === "mna" && {
+            dataCategories,
+            dealContext: dealContext.trim(),
+          }),
         }),
       });
 
@@ -200,7 +258,7 @@ export default function ConsultingResearchForm({
       // Clear any pending research data after successful submission
       localStorage.removeItem("consultralph_pending_research");
 
-      onTaskCreated(data.deepresearch_id, researchSubject.trim(), researchType);
+      onTaskCreated(data.deepresearch_id, researchSubject.trim(), researchType, researchMode);
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
     } finally {
@@ -219,7 +277,7 @@ export default function ConsultingResearchForm({
       {/* Research Type Selection */}
       <div>
         <label className="block text-sm sm:text-base font-medium mb-3">Research Type</label>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 sm:gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2 sm:gap-3">
           {researchTypes.map((type) => {
             const Icon = type.icon;
             return (
@@ -250,7 +308,9 @@ export default function ConsultingResearchForm({
       {/* Research Subject Input */}
       <div>
         <label htmlFor="researchSubject" className="block text-sm sm:text-base font-medium mb-2">
-          {researchType === "company"
+          {researchType === "mna"
+            ? "Target Company"
+            : researchType === "company"
             ? "Company Name"
             : researchType === "market"
             ? "Market / Segment"
@@ -288,6 +348,101 @@ export default function ConsultingResearchForm({
           </div>
         )}
       </div>
+
+      {/* M&A Data Categories */}
+      {researchType === "mna" && (
+        <div>
+          <label className="block text-sm sm:text-base font-medium mb-3">
+            Data Categories
+          </label>
+          <div className="space-y-2">
+            {MNA_DATA_CATEGORIES.map((cat) => (
+              <label
+                key={cat.id}
+                className="flex items-center gap-3 cursor-pointer"
+              >
+                <input
+                  type="checkbox"
+                  checked={dataCategories.includes(cat.id)}
+                  onChange={(e) => {
+                    if (e.target.checked) {
+                      setDataCategories((prev) => [...prev, cat.id]);
+                    } else {
+                      setDataCategories((prev) =>
+                        prev.filter((c) => c !== cat.id)
+                      );
+                    }
+                  }}
+                  className="w-4 h-4 rounded border-border text-primary focus:ring-primary"
+                  disabled={isSubmitting || isResearching}
+                />
+                <span className="text-sm sm:text-base">{cat.label}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* M&A Research Depth Selector */}
+      {researchType === "mna" && (
+        <div>
+          <label className="block text-sm sm:text-base font-medium mb-3">
+            Research Depth
+          </label>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3">
+            {MNA_DEPTH_OPTIONS.map((opt) => (
+              <button
+                key={opt.id}
+                type="button"
+                onClick={() => {
+                  setResearchMode(opt.id);
+                  setShowCostConfirm(false);
+                }}
+                disabled={isSubmitting || isResearching}
+                className={`p-3 sm:p-4 rounded-lg border text-left transition-all ${
+                  researchMode === opt.id
+                    ? opt.highlight
+                      ? "border-primary bg-primary/10 text-primary ring-2 ring-primary/30"
+                      : "border-primary bg-primary/5 text-primary"
+                    : opt.highlight
+                    ? "border-border hover:border-primary/50 hover:bg-surface bg-surface/50"
+                    : "border-border hover:border-primary/50 hover:bg-surface"
+                }`}
+              >
+                <span className="text-sm sm:text-base font-semibold block">
+                  {opt.label}
+                </span>
+                <span className="text-xs text-text-muted block mt-1">
+                  {opt.time} &middot; {opt.cost}
+                </span>
+              </button>
+            ))}
+          </div>
+          {researchMode === "max" && (
+            <p className="text-xs sm:text-sm text-text-muted mt-2">
+              Max mode runs an exhaustive multi-pass analysis with the deepest data coverage. Best for high-stakes deals.
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* M&A Deal Context */}
+      {researchType === "mna" && (
+        <div>
+          <label htmlFor="dealContext" className="block text-sm sm:text-base font-medium mb-2">
+            Deal Context{" "}
+            <span className="text-text-muted font-normal">(Optional)</span>
+          </label>
+          <textarea
+            id="dealContext"
+            value={dealContext}
+            onChange={(e) => setDealContext(e.target.value)}
+            placeholder="e.g., 'Evaluating as acquisition target for $2B+ deal...'"
+            className="input-field resize-none h-20 sm:h-24 text-base"
+            disabled={isSubmitting || isResearching}
+          />
+        </div>
+      )}
 
       {/* Research Focus */}
       <div>
@@ -369,6 +524,7 @@ export default function ConsultingResearchForm({
                 <option value="fast">Fast (~5 min)</option>
                 <option value="standard">Standard (10-20 min)</option>
                 <option value="heavy">Heavy (up to ~90 min)</option>
+                <option value="max">Max (up to ~180 min)</option>
               </select>
               <p className="text-xs sm:text-sm text-text-muted mt-2">
                 Choose fast for quick answers, standard for balanced depth, or heavy for complex analysis.
@@ -382,6 +538,31 @@ export default function ConsultingResearchForm({
       {error && (
         <div className="p-3 sm:p-4 bg-error/10 border border-error/30 rounded-lg text-error text-sm sm:text-base">
           {error}
+        </div>
+      )}
+
+      {/* Cost Confirmation for Max Mode */}
+      {showCostConfirm && researchMode === "max" && (
+        <div className="p-4 bg-surface border border-primary/30 rounded-lg space-y-3">
+          <p className="text-sm sm:text-base font-medium">
+            Max mode will cost approximately <strong>$15</strong> and take up to 180 minutes. Are you sure?
+          </p>
+          <div className="flex gap-3">
+            <button
+              type="submit"
+              className="btn-primary px-4 py-2 text-sm sm:text-base min-h-[40px]"
+              disabled={isSubmitting || isResearching}
+            >
+              Confirm &amp; Start
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowCostConfirm(false)}
+              className="px-4 py-2 text-sm sm:text-base border border-border rounded-lg hover:bg-surface-hover transition-colors min-h-[40px]"
+            >
+              Cancel
+            </button>
+          </div>
         </div>
       )}
 
