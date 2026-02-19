@@ -40,6 +40,15 @@ interface ResearchResultsProps {
     progress?: { current_step: number; total_steps: number };
     messages?: Array<{ role: string; content: string | Array<Record<string, unknown>> }>;
     error?: string;
+    researchType?: string;
+    researchMode?: string;
+    financialSummary?: {
+      categories: Array<{
+        label: string;
+        success: boolean;
+        resultCount: number;
+      }>;
+    };
   } | null;
   onCancel: () => void;
   onReset: () => void;
@@ -186,6 +195,58 @@ export default function ResearchResults({ result, onCancel, onReset }: ResearchR
               }`}
               style={{ width: `${progressPercent}%` }}
             />
+          </div>
+        </div>
+      )}
+
+      {/* M&A Deal Summary Header */}
+      {result.researchType === "mna" && (isInProgress || isComplete) && (
+        <div className="rounded-lg border border-border bg-surface p-4 space-y-3">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary border border-primary/20">
+              M&A Due Diligence
+            </span>
+            {result.researchMode && (
+              <span
+                className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${
+                  result.researchMode === "max"
+                    ? "bg-amber-500/10 text-amber-600 border-amber-500/20"
+                    : "bg-surface-hover text-text-muted border-border"
+                }`}
+              >
+                {result.researchMode.charAt(0).toUpperCase() + result.researchMode.slice(1)} Mode
+              </span>
+            )}
+            {result.financialSummary && (
+              <span className="text-xs text-text-muted ml-auto">
+                {result.financialSummary.categories.reduce((sum, c) => sum + c.resultCount, 0)} data sources analyzed
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Phase 1 Data Categories Status */}
+      {result.financialSummary && (
+        <div className="rounded-lg border border-border bg-surface p-4 space-y-3">
+          <h3 className="text-sm font-semibold text-foreground">Data Categories</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {result.financialSummary.categories.map((category, index) => (
+              <div
+                key={index}
+                className="flex items-center justify-between px-3 py-2 rounded-md bg-background border border-border/40"
+              >
+                <div className="flex items-center gap-2">
+                  {category.success ? (
+                    <CheckCircle className="w-4 h-4 text-green-500" />
+                  ) : (
+                    <XCircle className="w-4 h-4 text-text-muted" />
+                  )}
+                  <span className="text-sm text-foreground">{category.label}</span>
+                </div>
+                <span className="text-xs text-text-muted">{category.resultCount} results</span>
+              </div>
+            ))}
           </div>
         </div>
       )}
