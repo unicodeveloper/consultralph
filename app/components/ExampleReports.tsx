@@ -12,13 +12,13 @@ interface ExampleReport {
 
 const EXAMPLE_REPORTS: ExampleReport[] = [
   {
-    id: "9a637dbb-39b9-4450-ac30-af76c333fcd1",
+    id: "9f6e487a-e6c8-4e8a-a7fa-edbbfb3c3969",
     title: "SpaceX Acquisition of xAI",
     description: "Deep research into SpaceX's acquisition of xAI, strategic rationale, valuation, and market implications",
     type: "Due Diligence",
   },
   {
-    id: "7d497a3b-e272-4b60-bf9d-de71af0830f5",
+    id: "190efe90-f58e-447b-b1f4-40ad90fe8096",
     title: "Space Data Centres",
     description: "Comprehensive analysis of the space data centre market, key players, technology feasibility, and growth drivers",
     type: "Market Analysis",
