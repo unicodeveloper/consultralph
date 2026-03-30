@@ -113,7 +113,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Build alert_email object with report URL pointing back to this app
-    const appOrigin = new URL(request.url).origin;
+    const appOrigin = process.env.NEXT_PUBLIC_APP_URL || "https://consultralph.com";
     const alertEmailObj = alertEmail
       ? { email: alertEmail, custom_url: `${appOrigin}/?research={id}` }
       : undefined;
