@@ -85,6 +85,7 @@ NEXT_PUBLIC_APP_MODE=valyu
 - Node.js 18+
 - npm, yarn, or pnpm
 - Valyu API key (get one at [valyu.ai](https://valyu.ai))
+<img src="https://files.catbox.moe/n7fq4h.jpg" height="55">
 
 ### Installation
 
